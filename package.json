@@ -1,0 +1,21 @@
+{
+  "name": "obsidian-rollup-to-pdf",
+  "version": "2.0.0",
+  "description": "Compile a tree of wiki-linked Obsidian notes into a single formatted PDF via Templater + Pandoc. Heading-relative nesting, inline page expansion, summary callouts.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node test/edge-cases.test.js && node test/example.test.js"
+  },
+  "keywords": [
+    "obsidian",
+    "templater",
+    "pandoc",
+    "pdf",
+    "markdown",
+    "rollup"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}

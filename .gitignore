@@ -1,0 +1,5 @@
+node_modules/
+*.pdf
+_rollup_temp_*.md
+_rollup_header_*.tex
+.DS_Store
