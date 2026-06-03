@@ -32,6 +32,12 @@ shows the note name) and fixes several layout issues surfaced in real PDFs.
   of section depth, with small interior padding, so a box under a deep section
   no longer insets or overflows the page.
 
+### Added
+- **Appendix mode** (`templates/rollup-appendix.md`): a variant that moves each
+  linked note to a numbered appendix at the end (`<section>.<subsection>.<n>`,
+  recursing into deeper numbers) and leaves a "(see Appendix X.Y.Z)" reference
+  in the body. Output saved as `<Note> (appendix).pdf`.
+
 ### Authoring rules
 - README now opens with a six-point "Authoring rules" section (no H1s,
   line-leading `→` for expansion, the chapter pattern, consistent chapter

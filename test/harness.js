@@ -61,7 +61,7 @@ async function render(templatePath, vaultDir, rootRel, rootFile, maxDepth = Infi
     const root = fs.readFileSync(path.join(vaultDir, rootRel, rootFile), "utf8");
     const title = rootFile.replace(/\.md$/, "");
     const body = await R.walk(root, 2, rootRel, new Set([rootRel + "/" + rootFile]), 0);
-    return { compiled: `# ${title}\n${body}\n`, R };
+    return { compiled: `# ${title}\n${body}\n`, R, title };
 }
 
 module.exports = { loadRenderer, render, makeApp };

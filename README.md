@@ -50,6 +50,7 @@ Full details: [docs/authoring-guide.md](docs/authoring-guide.md).
    - `templates/rollup-renderer.md` — full recursion
    - `templates/rollup-renderer-1.md` — expand one level below the root
    - `templates/rollup-renderer-2.md` — expand two levels below the root
+   - `templates/rollup-appendix.md` — appendix mode: links move to numbered appendices at the end (see below)
 3. Edit the config block at the top of each template to match your machine:
    ```js
    const PANDOC      = "/opt/homebrew/bin/pandoc";
@@ -75,6 +76,16 @@ npm test
 ```
 
 Covers 37 edge cases plus an end-to-end render of the Cookbook example.
+
+## Appendix mode
+
+`templates/rollup-appendix.md` is an alternative renderer. Instead of expanding each `→ [[link]]` inline, it moves the linked note's content to an **Appendices** section at the end of the document and leaves a reference where the link was:
+
+```
+**Covert Operations** (see Appendix 1.1.1)
+```
+
+Appendix numbers are positional: `<section>.<subsection>.<n>` based on where the link sits in the body, and links found inside an appendix recurse into deeper numbers (`1.1.1.2`, `1.1.1.2.1`, ...). The main body stays short, a table of references, while all the pulled-in detail lives in numbered appendices. Same link, callout, and config rules as the main template; output is saved as `<Note> (appendix).pdf`.
 
 ## License
 

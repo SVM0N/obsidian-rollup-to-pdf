@@ -244,10 +244,14 @@ async function walk(content, baseLevel, fromDir, visited, depth) {
 }
 
 // ── Build ─────────────────────────────────────────────────────
-const docTitle = indexTitle;   // document title is the root note's filename
+// The root note's filename is the document title (passed to Pandoc as
+// metadata, rendered as the title block). The root's own content starts at the
+// top heading level (#) rather than being pushed under a redundant "# Title"
+// heading — this reclaims one heading level for deep rollups.
+const docTitle = indexTitle;
 const visited  = new Set([activeFile.path]);
-const body     = await walk(indexContent, 2, indexDir, visited, 0);
-const compiled = `# ${docTitle}\n${body}\n`;
+const body     = await walk(indexContent, 1, indexDir, visited, 0);
+const compiled = `${body}\n`;
 
 // ── Compile to PDF ────────────────────────────────────────────
 const tempMd  = path.join(vaultPath, indexDir, `_rollup_temp_${indexTitle}.md`);
@@ -257,11 +261,12 @@ fs.writeFileSync(tempHdr, LATEX_HEADER, "utf8");
 
 const safeName = indexTitle.replace(/[^a-zA-Z0-9 &–—]/g, "").trim();
 const pdfPath  = path.join(OUTPUT_DIR, `${safeName}.pdf`);
-const needsToc = (compiled.match(/^###/m) !== null);
+const needsToc = (compiled.match(/^##/m) !== null);
 
 const pandocCmd = [
     PANDOC, `"${tempMd}"`, `-o "${pdfPath}"`,
     `--pdf-engine=${PDF_ENGINE}`,
+    `--metadata title="${docTitle}"`,
     `-V geometry:margin=${MARGIN}`, `-V geometry:a4paper`,
     `--include-in-header="${tempHdr}"`,
     needsToc ? "--toc" : "", needsToc ? "--toc-depth=5" : "",
