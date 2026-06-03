@@ -4,6 +4,17 @@ A [Templater](https://github.com/SilentVoid13/Templates) script for Obsidian tha
 
 Point it at any note. Every inline `→ [[link]]` is expanded in place, nested one heading level below its context, and the whole tree is recursively flattened into one document with a table of contents and styled overview boxes.
 
+## Authoring rules (read first)
+
+For a rollup to nest correctly, write notes this way:
+
+1. **No H1 headings.** Start note content at `##`. Obsidian already shows the note name, and the rollup takes each section's title from the heading (or chapter link) that points to it.
+2. **Expansion links go on their own line, starting with `→`.** A line-leading `→ [[Page]]` pulls that page inline. Any other arrow (`- → [[x]]`, inline `→`, `->`) stays as plain text, use those for cross-links you do *not* want expanded.
+3. **A chapter is a heading + the link under it.** Put a `→ [[Page]]` directly under a heading; that heading becomes the section title and the linked page nests below it. A `> [!summary]` callout or intro prose between the heading and the link is fine, it stays as the chapter intro.
+4. **Keep an index page's chapter headings at one consistent level** (e.g. all `##`). Mixing `##` and `###` for sibling chapters throws off the nesting.
+5. **A bare list of `→` links** (no heading above each) gives each linked page its own section, titled from the filename.
+6. **Use `> [!summary]` or `> [!overview]`** for the grey overview boxes. Plain `>` blockquotes pass through unchanged.
+
 ## How it works
 
 The model is deliberately simple: **every page is parsed the same way.** There is no "index page" vs "content page" distinction. The renderer walks a page top to bottom, and wherever it finds a link on its own line starting with the `→` arrow, it pulls that page's content inline and recurses into it.
@@ -28,7 +39,7 @@ becomes, in the PDF:
 
 ### The rules in one paragraph
 
-A linked page renders **one heading level below the nearest heading above its link**. Two links under the same heading sit at the same level. A page's own headings shift to fit. Loose prose or a deeper heading after a link re-anchors with a `(continued)` heading so it isn't misread as part of the expanded section; a higher or equal heading re-anchors on its own. Only **line-leading** `→ [[...]]` links expand — list items (`- → [[x]]`), inline arrows, and `->` ASCII arrows stay as plain text, so cross-links don't get pulled in. Cycles render as `*[see: X]*`. `> [!summary]` / `> [!overview]` callouts become styled boxes; plain `>` blockquotes are left alone.
+A linked page renders **one heading level below the nearest heading above its link**. Two links under the same heading sit at the same level. A page's own headings shift to fit. When a link sits under a heading (blank lines, a `> [!summary]` callout, or intro prose between them is fine), that heading becomes the section title and the page nests below it; a bare link with no heading above it is titled from the linked note's filename. A new heading after an expanded link simply renders at its own level. Only **line-leading** `→ [[...]]` links expand — list items (`- → [[x]]`), inline arrows, and `->` ASCII arrows stay as plain text, so cross-links don't get pulled in. Cycles render as `*[see: X]*`. `> [!summary]` / `> [!overview]` callouts become styled boxes; plain `>` blockquotes are left alone.
 
 Full details: [docs/authoring-guide.md](docs/authoring-guide.md).
 

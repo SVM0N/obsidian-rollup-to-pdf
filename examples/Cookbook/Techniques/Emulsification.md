@@ -1,5 +1,3 @@
-# Emulsification
-
 ← [[Techniques]]
 
 Forcing oil and water to coexist by dispersing one into the other.

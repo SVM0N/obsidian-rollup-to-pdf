@@ -2,8 +2,6 @@
 tags: [t]
 ---
 
-# Alpha Page
-
 ← [[Root]]
 
 Alpha intro prose.

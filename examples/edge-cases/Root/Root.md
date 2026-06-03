@@ -2,8 +2,6 @@
 tags: [test]
 ---
 
-# Root Document
-
 Intro prose at the top of the root. This should appear under the document title.
 
 ## Case A — link directly under h2
@@ -79,3 +77,18 @@ ascii arrow -> [[Sub/Beta]] must stay plain
 
 ## Case S — empty linked page
 → [[Sub/Empty]]
+
+## Case T — heading directly above link is adopted as title
+→ [[Sub/Alpha]]
+
+## Case U — heading, summary callout, then link (adoption survives callout)
+> [!summary]
+> This summary sits between the heading and the link.
+→ [[Sub/Beta]]
+
+## Case V — heading, prose, then link (NOT adopted, link nests below)
+Some prose first.
+→ [[Sub/Beta]]
+
+## Alpha Page
+→ [[Sub/Alpha]]

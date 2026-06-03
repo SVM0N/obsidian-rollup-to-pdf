@@ -19,13 +19,17 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
     const has = (re) => re.test(compiled);
 
     ck("document title", has(/^# Cookbook\n/));
-    ck("Techniques nests at ###", has(/\n### Techniques\n/));
+    ck("Techniques chapter at h2", has(/\n## Techniques\n/));
+    ck("Knife Skills nests at h3", has(/### Knife Skills/));
+    ck("Knife Skills sub-index Fundamentals at h4", has(/#### Fundamentals/));
+    ck("deep level reaches h5 (The Grip reused / Common Cuts titled)", has(/##### /));
+    ck("deepest content at h6", has(/###### /));
+    ck("no duplicated chapter titles", !has(/### Techniques\n/) && !has(/#### Knife Skills\n/));
     ck("summary callout boxed", has(/tcolorbox[\s\S]*?Foundational methods/));
     ck("overview callout boxed", has(/tcolorbox[\s\S]*?Worked examples/));
-    ck("Knife Skills expands one level below Techniques (####)", has(/#### Knife Skills/));
-    ck("Emulsification expands (####)", has(/#### Emulsification/));
-    ck("Recipes section present", has(/\n### Recipes\n/));
-    ck("Mayonnaise expands under Recipes", has(/#### Mayonnaise/));
+    ck("Recipes section present", has(/\n## Recipes\n/));
+    ck("Mayonnaise nests under Recipes (###)", has(/### Mayonnaise/));
+    ck("See also section present", has(/### See also/));
     ck("cross-link to Emulsification stays plain (not re-expanded loop)",
         has(/see → Techniques\/Emulsification/));
     ck("plain blockquote preserved", has(/> a vinaigrette is just a temporary emulsion/));

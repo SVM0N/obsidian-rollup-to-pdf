@@ -1,5 +1,3 @@
-# Delta Page (deep)
-
 Delta is two expansions deep. Tests heading-shift cap.
 
 ## Delta H2

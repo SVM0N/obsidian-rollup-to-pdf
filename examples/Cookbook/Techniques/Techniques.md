@@ -1,5 +1,3 @@
-# Techniques
-
 The building blocks.
 
 → [[Techniques/Knife Skills]]

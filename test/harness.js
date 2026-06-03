@@ -59,8 +59,8 @@ async function loadRenderer(templatePath, vaultDir, rootRel, maxDepth = Infinity
 async function render(templatePath, vaultDir, rootRel, rootFile, maxDepth = Infinity) {
     const R = await loadRenderer(templatePath, vaultDir, rootRel, maxDepth);
     const root = fs.readFileSync(path.join(vaultDir, rootRel, rootFile), "utf8");
-    const title = R.pageTitle(root, rootFile.replace(/\.md$/, ""));
-    const body = await R.walk(root, 1, rootRel, new Set([rootRel + "/" + rootFile]), 0);
+    const title = rootFile.replace(/\.md$/, "");
+    const body = await R.walk(root, 2, rootRel, new Set([rootRel + "/" + rootFile]), 0);
     return { compiled: `# ${title}\n${body}\n`, R };
 }
 

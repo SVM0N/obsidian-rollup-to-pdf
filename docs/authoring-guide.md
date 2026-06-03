@@ -60,17 +60,28 @@ A link renders one level below the nearest heading above it. Your own headings p
 
 → both render as `####`, side by side.
 
-**Text after a link is re-anchored automatically.** If loose prose or a *deeper* heading follows an expanded link, the renderer re-emits the active heading with ` (continued)` so the text isn't misread as part of the expanded subsection:
+**How titles work (heading reuse).** When a `→` link sits under a heading (blank lines, a `> [!summary]` callout, or intro prose between them is fine), that heading *is* the section's title. The linked page's content nests one level below it, and the linked page's own H1 (if any) is dropped. So each level of your index contributes exactly one heading:
 
 ```markdown
-#### Heat Control
-→ [[Techniques/Searing]]
-more notes on heat
+## USA
+> [!summary]
+> ...
+→ [[USA/USA]]
 ```
 
-→ `#### Heat Control` / `##### Searing` / `#### Heat Control (continued)` / `more notes on heat`
+gives `## USA`, then everything inside `USA.md` nested below it. You do **not** need the heading text to match the linked page's title — name the heading whatever reads best. This is what keeps deep rollups (Politics → USA → Covert Operations → Operation → Section) clean, with one heading level per hop and no duplicated titles.
 
-A *higher-or-equal* heading after a link re-anchors on its own, so no `(continued)` is added in that case. A bare `---` or blank line never triggers it.
+If a link is **not** under a fresh heading — a bare list of sibling links, or a link after a paragraph of prose — there's no heading to reuse, so the linked page is titled from its **filename**. That's how a page that's just a list of `→` links (e.g. a list of operations) gives each linked page its own titled section.
+
+**Prose between a heading and its link stays as the chapter intro.** It does not break heading reuse:
+
+```markdown
+## Covert Operations
+Documented programmes and false flags. Each has its own note below.
+→ [[Covert Ops/Covert Ops]]
+```
+
+→ `## Covert Operations`, then the intro line, then the linked page nested below. A new heading after an expanded link simply renders at its own level (there is no `(continued)` re-anchor).
 
 ---
 

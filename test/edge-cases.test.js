@@ -24,29 +24,35 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
     const has = (re) => re.test(compiled);
 
     // A: link under h2 -> h3; summary boxed + LaTeX-escaped
-    ck("A link under h2 -> ### Alpha Page", has(/\n### Alpha Page\n/));
+    // A: link under h2 adopts the Case A heading (see block below)
+    // A: link under h2 reuses the Case A heading; Alpha sections nest at ###
+    {
+        const seg = compiled.split("## Case A")[1].split("\n## Case B")[0];
+        ck("A Alpha sections nest at ### (heading reused)", /### Alpha Section One/.test(seg));
+        ck("A no separate Alpha title", !/### Alpha Page/.test(seg) && !/#### Alpha/.test(seg));
+    }
     ck("A summary boxed", has(/tcolorbox[\s\S]*?LaTeX specials/));
     ck("A LaTeX escapes", has(/50\\% \\& \\\$5 \\#hash/));
     ck("A underscore escaped", has(/\\_under\\_/));
 
-    // B: two links under one h2 -> both ###, no continued between
+    // B: two links under one h2. First reuses the heading (Alpha sections at
+    // ###); second comes after content so it gets its own filename title.
     {
-        const seg = compiled.split("Case B")[1].split("## Case C")[0];
-        ck("B Alpha ###", /\n### Alpha Page\n/.test(seg));
-        ck("B Beta ###", /\n### Beta Page \(subfolder\)\n/.test(seg));
-        ck("B no continued between links", !/\(continued\)/.test(seg));
+        const seg = compiled.split("## Case B")[1].split("\n## Case C")[0];
+        ck("B first link reuses heading (Alpha ### sections)", /### Alpha Section One/.test(seg));
+        ck("B second link titled (### Beta)", /### Beta\b/.test(seg));
     }
 
     // C: prose after link -> continued
     ck("C continued", has(/## Case C — prose after a link triggers continued \(continued\)/));
     ck("C prose present", has(/This prose follows the link and must be re-anchored/));
 
-    // D: deeper heading after link -> continued precedes it
-    ck("D continued", has(/## Case D — deeper heading after a link triggers continued \(continued\)/));
+    // D: a deeper heading after a link renders at its own level (no continued
+    // re-anchor; headings self-anchor).
     {
-        const ci = compiled.indexOf("Case D — deeper heading after a link triggers continued (continued)");
-        const di = compiled.indexOf("A deeper heading that would otherwise");
-        ck("D continued precedes deeper heading", ci !== -1 && di !== -1 && ci < di);
+        const seg = compiled.split("## Case D")[1].split("\n## Case E")[0];
+        ck("D no (continued) artifact", !/\(continued\)/.test(seg));
+        ck("D deeper heading present", /A deeper heading that would otherwise/.test(seg));
     }
 
     // E: higher/equal heading after link -> no continued
@@ -56,10 +62,13 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
         ck("E2 sibling present", /Case E2/.test(seg));
     }
 
-    // F/G/H/I: nesting math + h6 cap
-    ck("F h3 link -> #### Beta", has(/#### Beta Page \(subfolder\)/));
-    ck("G h4 link -> ##### Beta", has(/##### Beta Page \(subfolder\)/));
-    ck("H h5 link -> ###### Beta", has(/###### Beta Page \(subfolder\)/));
+    // F/G/H/I: nesting math under adoption. Beta's H1 adopts the case heading
+    // level; Beta's own "### deep heading" then nests two below that (its h3
+    // shifted to sit under the adopted h1 slot). h6 cap still holds.
+    // Case F heading is ###(h3) -> Beta deep heading at #####(h5)
+    ck("F adopt under h3 -> Beta deep heading #####", has(/##### Beta deep heading/));
+    // Case G heading is ####(h4) -> ######(h6); Case H #####(h5) -> ######(cap)
+    ck("G/H adopt deeper -> Beta deep heading ###### present", has(/###### Beta deep heading/));
     ck("I h6 cap: no #######", !has(/#######/));
 
     // J: non-expanding arrows stay plain
@@ -69,25 +78,26 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
         ck("J inline arrow plain", /see inline → /.test(seg));
         ck("J trailing-text arrow plain", /trailing text after link/.test(seg));
         ck("J ascii arrow plain", /ascii arrow -> /.test(seg));
-        ck("J no expansion inside Case J", !/### Alpha Page/.test(seg));
+        ck("J no expansion inside Case J", !/### Alpha Section One/.test(seg));
     }
 
-    // K: alias uses page H1, not alias text
-    ck("K page H1 not alias", has(/Alpha Page/) && !has(/THIS ALIAS SHOULD NOT BE THE HEADING/));
+    // K: alias link is adopted under the Case K heading; alias text never used
+    //    as a heading, and Alpha's H1 isn't emitted as a title either.
+    ck("K alias not used as heading", !has(/THIS ALIAS SHOULD NOT BE THE HEADING/));
 
-    // L: no-H1 page -> filename fallback
-    ck("L filename fallback", has(/### NoH1\n/));
+    // L: no-H1 page adopted -> its ## section nests one below Case L (###)
+    ck("L no-H1 page adopted", has(/### A section in a page lacking H1/));
 
     // M: not found
     ck("M not-found marker", has(/\[Page not found: Sub\/DoesNotExist\]/));
 
     // N/O: cycles
     ck("N self-cycle see-ref", has(/\*\[see: Root\]\*/));
-    ck("O mutual cycle terminates", has(/Cycle One/) && has(/Cycle Two/) && has(/\*\[see: Sub\/Cycle1\]\*/));
+    ck("O mutual cycle terminates", has(/Cycle2/) && has(/\*\[see: Sub\/Cycle1\]\*/));
 
-    // P/Q: resolution
-    ck("P bare link -> same-folder flat sibling", has(/Beta FLAT \(stale sibling\)/));
-    ck("Q qualified link recurses into Delta", has(/Delta Page \(deep\)/));
+    // P/Q: resolution (titles are adopted/dropped, so assert on body text)
+    ck("P bare link -> same-folder flat sibling", has(/This is the WRONG Beta/));
+    ck("Q qualified link recurses into Delta", has(/Delta is two expansions deep/));
     ck("Q Delta h6 stays capped", !has(/#######/));
 
     // blockquote vs callout
@@ -96,14 +106,25 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
     // R/S: overview variant + multiline + empty
     ck("R overview boxed", has(/tcolorbox[\s\S]*?Line one of a multi-line overview/));
     ck("R multiline joined", has(/Line one of a multi-line overview\. Line two continues it\./));
-    ck("S empty page heading", has(/### Empty\n/));
+    ck("S empty page no crash", has(/Case S — empty linked page/));
+
+    // T: heading text == linked page H1 -> dedupe (single heading, content nests below)
+    {
+        // "## Alpha Page" + link to Alpha (H1 "Alpha Page"): the page title is
+        // dropped, Alpha's sections nest directly under the existing heading.
+        const seg = compiled.split("## Alpha Page")[1] || "";
+        ck("dedupe: no doubled Alpha Page heading", (compiled.match(/Alpha Page/g) || []).length >= 1);
+        // After the "## Alpha Page" heading, the next heading should be Alpha's
+        // section at ### (one below), NOT a repeated "### Alpha Page".
+        ck("dedupe: Alpha sections nest at ###", /### Alpha Section One/.test(seg));
+        ck("dedupe: no '### Alpha Page' title repeat", !/### Alpha Page/.test(seg));
+    }
 
     // ---- depth-cap behaviour via MAX_DEPTH ----
     {
         const deep = await render(TEMPLATE, EDGE, "Root", "Root.md", 1);
-        // At depth 1, Gamma expands but its child Delta must NOT (becomes see-ref)
-        ck("depth=1 expands first level (Gamma)", /Gamma Page/.test(deep.compiled));
-        ck("depth=1 stops before Delta", !/Delta Page \(deep\)/.test(deep.compiled));
+        ck("depth=1 expands first level (Gamma)", /Gamma child/.test(deep.compiled));
+        ck("depth=1 stops before Delta", !/Delta is two expansions deep/.test(deep.compiled));
         ck("depth=1 leaves see-ref for capped link", /\*\[see: Deep\/Delta\]\*/.test(deep.compiled));
     }
 

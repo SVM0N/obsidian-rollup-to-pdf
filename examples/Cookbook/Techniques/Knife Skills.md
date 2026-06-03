@@ -1,11 +1,7 @@
-# Knife Skills
-
 ← [[Techniques]]
 
-Good knife work is mostly about a consistent grip and a stable board.
+Good knife work is mostly grip and a stable board.
 
-## The Grip
-Pinch the blade, curl the guiding hand.
-
-## Common Cuts
-Julienne, brunoise, chiffonade — all variations on controlled thickness.
+## Fundamentals
+→ [[Knife Skills/The Grip]]
+→ [[Knife Skills/Common Cuts]]

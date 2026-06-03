@@ -2,8 +2,6 @@
 tags: [example]
 ---
 
-# Cookbook
-
 A small example vault showing how Rollup to PDF compiles a multi-level
 knowledge base. Run **Rollup to PDF** from this page.
 

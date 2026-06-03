@@ -1,5 +1,3 @@
-# Mayonnaise
-
 ← [[Recipes]]
 
 The canonical emulsification drill: see → [[Techniques/Emulsification]].
