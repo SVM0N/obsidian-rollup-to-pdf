@@ -54,13 +54,23 @@ Full details: [docs/authoring-guide.md](docs/authoring-guide.md).
 3. Edit the config block at the top of each template to match your machine:
    ```js
    const PANDOC      = "/opt/homebrew/bin/pandoc";
-   const PDF_ENGINE  = "/usr/local/bin/pdflatex";
+   const PDF_ENGINE  = "/usr/local/bin/xelatex";   // Unicode-capable engine
+   const CJK_FONT    = "PingFang SC";              // font for Chinese/Japanese/Korean glyphs
    const MARGIN      = "2cm";
    ```
-   Find your paths with `which pandoc` and `which pdflatex`.
+   Find your paths with `which pandoc` and `which xelatex`. `CJK_FONT` must name a
+   font installed on your system (`PingFang SC` ships with macOS); change it for
+   Japanese/Korean or on other platforms.
 4. Add the template as a command / tab-bar button (Templater settings), or run it via the command palette from the note you want as the document root.
 
-Requires Pandoc and a LaTeX engine (e.g. MacTeX / TeX Live) with the `tcolorbox` package.
+Requires Pandoc and **XeLaTeX** (e.g. MacTeX / TeX Live) with the `tcolorbox` and
+`xecjk` packages. XeLaTeX is used instead of pdfLaTeX so non-Latin scripts (Chinese,
+etc.) render instead of erroring out. On a minimal TeX install (BasicTeX / TinyTeX),
+add the CJK support with:
+
+```sh
+tlmgr install xecjk ctex
+```
 
 ## Examples
 

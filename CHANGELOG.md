@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — Unicode / CJK support
+
+### Fixed
+- **Non-Latin scripts no longer break the export.** Switched the PDF engine from
+  `pdflatex` to `xelatex` across all four templates, so Chinese (and other
+  Unicode scripts) render instead of failing with
+  `! LaTeX Error: Unicode character … not set up for use with LaTeX`.
+
+### Added
+- `CJK_FONT` config constant (default `PingFang SC`, a macOS built-in) passed to
+  Pandoc as `-V CJKmainfont`, giving CJK glyphs a real font. Requires the
+  `xecjk` LaTeX package (`tlmgr install xecjk ctex` on minimal TeX installs).
+
 ## 2.4.0 — no-H1 authoring model + layout fixes
 
 Adapts the renderer to notes written without H1 headings (Obsidian already

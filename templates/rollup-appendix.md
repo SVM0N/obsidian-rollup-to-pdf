@@ -25,7 +25,8 @@ const { exec } = require("child_process");
 
 // ── Config ───────────────────────────────────────────────────
 const PANDOC      = "/opt/homebrew/bin/pandoc";
-const PDF_ENGINE  = "/usr/local/bin/pdflatex";
+const PDF_ENGINE  = "/usr/local/bin/xelatex";   // Unicode-capable engine (was pdflatex, which can't render CJK/non-Latin scripts)
+const CJK_FONT    = "PingFang SC";              // font for Chinese/Japanese/Korean glyphs (macOS built-in)
 const MARGIN      = "2cm";
 const MAX_DEPTH   = Infinity;   // recursion levels of appendices (Infinity = unlimited)
 // ─────────────────────────────────────────────────────────────
@@ -289,7 +290,9 @@ const needsToc = (compiled.match(/^##/m) !== null) || appendices.length > 0;
 const pandocCmd = [
     PANDOC, `"${tempMd}"`, `-o "${pdfPath}"`,
     `--metadata title="${docTitle}"`,
+    "--number-sections",
     `--pdf-engine=${PDF_ENGINE}`,
+    `-V CJKmainfont="${CJK_FONT}"`,
     `-V geometry:margin=${MARGIN}`, `-V geometry:a4paper`,
     `--include-in-header="${tempHdr}"`,
     needsToc ? "--toc" : "", needsToc ? "--toc-depth=5" : "",

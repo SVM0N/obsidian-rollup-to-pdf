@@ -26,7 +26,8 @@ const { exec } = require("child_process");
 
 // ── Config ───────────────────────────────────────────────────
 const PANDOC      = "/opt/homebrew/bin/pandoc";
-const PDF_ENGINE  = "/usr/local/bin/pdflatex";
+const PDF_ENGINE  = "/usr/local/bin/xelatex";   // Unicode-capable engine (was pdflatex, which can't render CJK/non-Latin scripts)
+const CJK_FONT    = "PingFang SC";              // font for Chinese/Japanese/Korean glyphs (macOS built-in)
 const MARGIN      = "2cm";
 const MAX_DEPTH   = 1;   // variant: max 1 level(s) below the root
 // ─────────────────────────────────────────────────────────────
@@ -246,8 +247,8 @@ async function walk(content, baseLevel, fromDir, visited, depth) {
 // ── Build ─────────────────────────────────────────────────────
 const docTitle = indexTitle;   // document title is the root note's filename
 const visited  = new Set([activeFile.path]);
-const body     = await walk(indexContent, 2, indexDir, visited, 0);
-const compiled = `# ${docTitle}\n${body}\n`;
+const body     = await walk(indexContent, 1, indexDir, visited, 0);
+const compiled = `${body}\n`;
 
 // ── Compile to PDF ────────────────────────────────────────────
 const tempMd  = path.join(vaultPath, indexDir, `_rollup_temp_${indexTitle}.md`);
@@ -262,6 +263,9 @@ const needsToc = (compiled.match(/^###/m) !== null);
 const pandocCmd = [
     PANDOC, `"${tempMd}"`, `-o "${pdfPath}"`,
     `--pdf-engine=${PDF_ENGINE}`,
+    `-V CJKmainfont="${CJK_FONT}"`,
+    `--metadata title="${docTitle}"`,
+    "--number-sections",
     `-V geometry:margin=${MARGIN}`, `-V geometry:a4paper`,
     `--include-in-header="${tempHdr}"`,
     needsToc ? "--toc" : "", needsToc ? "--toc-depth=5" : "",
