@@ -15,7 +15,7 @@ A linked page is pulled into the PDF **only when the link sits on its own line, 
 When the renderer hits that line it:
 
 1. Resolves the page,
-2. Inserts a heading one level below the current heading, using **that page's H1** as the title,
+2. Inserts a heading one level below the current heading — titled from **the heading directly above the link**, if there is one, or otherwise from **the linked page's filename** (pages don't carry their own H1; see the no-H1 rule below),
 3. Recurses into the page (its `→` links expand too), shifting all its headings to fit.
 
 **Any other `→` is left as plain text** — list items, inline references, cross-links:
@@ -138,13 +138,14 @@ The renderer always:
 
 ## Depth variants
 
-| Template | Behaviour |
+| Command | Behaviour |
 |---|---|
-| `rollup-renderer.md` | Full recursion (`MAX_DEPTH = Infinity`) |
-| `rollup-renderer-2.md` | Two levels of expansion below the root |
-| `rollup-renderer-1.md` | One level below the root; deeper links become `*[see: X]*` |
+| Render rollup to PDF (full recursion) | Full recursion (no depth cap) |
+| Render rollup to PDF (max 2 levels deep) | Two levels of expansion below the root |
+| Render rollup to PDF (max 1 level deep) | One level below the root; deeper links become `*[see: X]*` |
 
-`MAX_DEPTH` is set at the top of each template. Pandoc paths and `MARGIN` live there too.
+Pandoc path, PDF engine path, CJK font, and page margin are configured once in
+**Settings → Rollup to PDF**, not per command.
 
 ---
 
@@ -154,7 +155,7 @@ The renderer always:
 - [ ] Pages you want expanded are linked with an own-line, leading `→ [[...]]`
 - [ ] Cross-links / references are in lists or inline so they stay plain text
 - [ ] Summaries use `> [!summary]` callouts where wanted
-- [ ] Click **Rollup to PDF** in the tab bar
+- [ ] Run **Render rollup to PDF** from the command palette (Cmd/Ctrl+P)
 
 The PDF saves next to the root page.
 
@@ -172,4 +173,4 @@ The PDF saves next to the root page.
 
 **Heading nested too deep / too shallow:** check the nearest heading above the link — the page nests exactly one level below it.
 
-**Pandoc error:** open Cmd+Option+I → Console for the full error. Most common cause is a special character in a filename.
+**Pandoc error:** the notice shows Pandoc's error message directly; open Cmd+Option+I → Console for the full stderr output. Most common cause is a special character in a filename, or the Pandoc/PDF engine path in **Settings → Rollup to PDF** not matching your system.

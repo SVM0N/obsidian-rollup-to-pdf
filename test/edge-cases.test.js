@@ -6,9 +6,8 @@
 // ============================================================
 
 const path = require("path");
-const { render, loadRenderer } = require("./harness.js");
+const { render } = require("./harness.js");
 
-const TEMPLATE = path.join(__dirname, "..", "templates", "rollup-renderer.md");
 const EXAMPLES = path.join(__dirname, "..", "examples");
 const EDGE = path.join(EXAMPLES, "edge-cases");
 
@@ -16,11 +15,8 @@ let pass = 0, fail = 0;
 const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name));
 
 (async () => {
-    // ---- pure-function checks (extracted from the template) ----
-    const R = await loadRenderer(TEMPLATE, EDGE, "Root");
-
     // Render the whole edge vault.
-    const { compiled } = await render(TEMPLATE, EDGE, "Root", "Root.md");
+    const { compiled } = await render(EDGE, "Root", "Root.md");
     const has = (re) => re.test(compiled);
 
     // A: link under h2 -> h3; summary boxed + LaTeX-escaped
@@ -122,7 +118,7 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
 
     // ---- depth-cap behaviour via MAX_DEPTH ----
     {
-        const deep = await render(TEMPLATE, EDGE, "Root", "Root.md", 1);
+        const deep = await render(EDGE, "Root", "Root.md", 1);
         ck("depth=1 expands first level (Gamma)", /Gamma child/.test(deep.compiled));
         ck("depth=1 stops before Delta", !/Delta is two expansions deep/.test(deep.compiled));
         ck("depth=1 leaves see-ref for capped link", /\*\[see: Deep\/Delta\]\*/.test(deep.compiled));

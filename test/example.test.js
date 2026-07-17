@@ -8,14 +8,13 @@
 const path = require("path");
 const { render } = require("./harness.js");
 
-const TEMPLATE = path.join(__dirname, "..", "templates", "rollup-renderer.md");
 const EXAMPLES = path.join(__dirname, "..", "examples");
 
 let pass = 0, fail = 0;
 const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name));
 
 (async () => {
-    const { compiled } = await render(TEMPLATE, EXAMPLES, "Cookbook", "Cookbook.md");
+    const { compiled } = await render(EXAMPLES, "Cookbook", "Cookbook.md");
     const has = (re) => re.test(compiled);
 
     ck("document title", has(/^# Cookbook\n/));

@@ -1,17 +1,39 @@
 # Changelog
 
-## Unreleased — Unicode / CJK support
+## 1.0.0 — plugin rewrite
+
+The renderer is now a real Obsidian plugin instead of a set of Templater
+scripts. The rendering logic (`walk`, CSV-view expansion, LaTeX header) is
+unchanged; what changed is how it's installed, configured, and invoked.
+
+### Changed
+- **Templater dependency dropped.** The four `templates/*.md` scripts are
+  retired; the plugin registers its own commands and no longer requires the
+  Templater community plugin.
+- **Per-template config blocks replaced by a Settings tab.** Pandoc path, PDF
+  engine path, CJK font, and page margin are now set once in
+  **Settings → Rollup to PDF** instead of edited into each template file.
+- **The four templates are now four commands**, run from the command palette:
+  full recursion, max 1 level, max 2 levels, and appendix mode.
+- **Pandoc invocation hardened.** Switched from a shell-interpolated command
+  string to `execFile` with an argument array, so a note title or path
+  containing quotes or shell metacharacters can no longer be misinterpreted
+  as shell syntax.
+- Source of truth moved to `src/*.ts`; the test suite now bundles and
+  exercises that TypeScript directly instead of extracting JS from a
+  Templater script.
 
 ### Fixed
-- **Non-Latin scripts no longer break the export.** Switched the PDF engine from
-  `pdflatex` to `xelatex` across all four templates, so Chinese (and other
-  Unicode scripts) render instead of failing with
+- **Non-Latin scripts no longer break the export.** Switched the PDF engine
+  from `pdflatex` to `xelatex`, so Chinese (and other Unicode scripts) render
+  instead of failing with
   `! LaTeX Error: Unicode character … not set up for use with LaTeX`.
 
 ### Added
-- `CJK_FONT` config constant (default `PingFang SC`, a macOS built-in) passed to
-  Pandoc as `-V CJKmainfont`, giving CJK glyphs a real font. Requires the
-  `xecjk` LaTeX package (`tlmgr install xecjk ctex` on minimal TeX installs).
+- A CJK font setting (blank by default; `PingFang SC` on macOS or `Noto Sans
+  CJK SC` on Linux/Windows are common choices) passed to Pandoc as
+  `-V CJKmainfont`, giving CJK glyphs a real font. Requires the `xecjk` LaTeX
+  package (`tlmgr install xecjk ctex` on minimal TeX installs).
 
 ## 2.4.0 — no-H1 authoring model + layout fixes
 

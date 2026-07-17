@@ -1,0 +1,10 @@
+{
+	"id": "rollup-to-pdf",
+	"name": "Rollup to PDF",
+	"version": "1.0.0",
+	"minAppVersion": "1.4.0",
+	"description": "Compile a tree of wiki-linked notes into a single formatted PDF via Pandoc, with heading-relative nesting and inline or appendix-style page expansion.",
+	"author": "SVM0N",
+	"authorUrl": "https://github.com/SVM0N",
+	"isDesktopOnly": true
+}

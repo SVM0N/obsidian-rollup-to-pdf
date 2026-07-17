@@ -3,3 +3,6 @@ node_modules/
 _rollup_temp_*.md
 _rollup_header_*.tex
 .DS_Store
+main.js
+*.js.map
+.eslintcache

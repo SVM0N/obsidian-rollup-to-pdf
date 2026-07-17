@@ -1,6 +1,6 @@
 # Rollup to PDF
 
-A [Templater](https://github.com/SilentVoid13/Templates) script for Obsidian that compiles a tree of wiki-linked notes into a single, formatted PDF via [Pandoc](https://pandoc.org/).
+An Obsidian plugin that compiles a tree of wiki-linked notes into a single, formatted PDF via [Pandoc](https://pandoc.org/).
 
 Point it at any note. Every inline `→ [[link]]` is expanded in place, nested one heading level below its context, and the whole tree is recursively flattened into one document with a table of contents and styled overview boxes.
 
@@ -45,23 +45,39 @@ Full details: [docs/authoring-guide.md](docs/authoring-guide.md).
 
 ## Install
 
-1. Install the **Templater** community plugin.
-2. Copy the templates into your Templater templates folder (Settings → Templater → *Template folder location*):
-   - `templates/rollup-renderer.md` — full recursion
-   - `templates/rollup-renderer-1.md` — expand one level below the root
-   - `templates/rollup-renderer-2.md` — expand two levels below the root
-   - `templates/rollup-appendix.md` — appendix mode: links move to numbered appendices at the end (see below)
-3. Edit the config block at the top of each template to match your machine:
-   ```js
-   const PANDOC      = "/opt/homebrew/bin/pandoc";
-   const PDF_ENGINE  = "/usr/local/bin/xelatex";   // Unicode-capable engine
-   const CJK_FONT    = "PingFang SC";              // font for Chinese/Japanese/Korean glyphs
-   const MARGIN      = "2cm";
-   ```
-   Find your paths with `which pandoc` and `which xelatex`. `CJK_FONT` must name a
-   font installed on your system (`PingFang SC` ships with macOS); change it for
-   Japanese/Korean or on other platforms.
-4. Add the template as a command / tab-bar button (Templater settings), or run it via the command palette from the note you want as the document root.
+This plugin is not yet in Obsidian's community plugin store. Until then, install it
+with [BRAT](https://github.com/TfTHacker/obsidian42-brat):
+
+1. Install **BRAT** from Community Plugins and enable it.
+2. In BRAT's settings, choose **Add Beta Plugin** and enter this repo's URL
+   (`https://github.com/SVM0N/obsidian-rollup-to-pdf`).
+3. Enable **Rollup to PDF** in Community Plugins.
+
+(Or install manually: download `main.js`, `manifest.json`, and `styles.css` — if
+present — from a [release](https://github.com/SVM0N/obsidian-rollup-to-pdf/releases)
+into `<vault>/.obsidian/plugins/rollup-to-pdf/`, then enable it in Community Plugins.)
+
+### Configure
+
+Open **Settings → Rollup to PDF** and set:
+
+- **Pandoc path** — `pandoc` if it's on your `PATH`, or a full path (find it with `which pandoc`).
+- **PDF engine path** — a Unicode-capable LaTeX engine, e.g. `xelatex` (find it with `which xelatex`).
+- **CJK font** — a font installed on your system for Chinese/Japanese/Korean glyphs, e.g. `PingFang SC` (macOS) or `Noto Sans CJK SC` (Linux/Windows). Leave blank if you don't need CJK support.
+- **Page margin** — e.g. `2cm`.
+
+### Render
+
+Open the note you want as the document root, then run one of these from the
+command palette:
+
+- **Render rollup to PDF (full recursion)**
+- **Render rollup to PDF (max 1 level deep)**
+- **Render rollup to PDF (max 2 levels deep)**
+- **Render rollup to PDF (appendix mode)** — see [Appendix mode](#appendix-mode) below
+
+This plugin is desktop-only: it shells out to Pandoc and a LaTeX engine, neither of
+which are available on mobile.
 
 Requires Pandoc and **XeLaTeX** (e.g. MacTeX / TeX Live) with the `tcolorbox` and
 `xecjk` packages. XeLaTeX is used instead of pdfLaTeX so non-Latin scripts (Chinese,
@@ -74,28 +90,28 @@ tlmgr install xecjk ctex
 
 ## Examples
 
-- [`examples/Cookbook`](examples/Cookbook) — a small, readable knowledge base. Open `Cookbook.md` and run the template to see nesting, callouts, and cross-links in action.
+- [`examples/Cookbook`](examples/Cookbook) — a small, readable knowledge base. Open `Cookbook.md` and run **Render rollup to PDF** to see nesting, callouts, and cross-links in action.
 - [`examples/edge-cases`](examples/edge-cases) — a stress vault covering every behaviour (nesting math, the h6 cap, cycles, resolution rules, callouts, non-expanding arrows). Used by the test suite.
 
 ## Tests
 
-The test suite loads the renderer logic **directly out of the template file** — there is no second copy of the logic to drift out of sync. `test/harness.js` extracts the JS from `templates/rollup-renderer.md`, stubs the Obsidian vault API with the filesystem, and runs the real walker.
+The test suite loads the renderer logic **directly out of `src/`** — there is no second copy of the logic to drift out of sync. `test/harness.js` bundles `src/walker.ts` (and its local dependencies) with esbuild, stubs the Obsidian vault API with the filesystem, and runs the real walker that ships inside `main.js`.
 
 ```bash
 npm test
 ```
 
-Covers 37 edge cases plus an end-to-end render of the Cookbook example.
+Covers 39 edge cases plus an end-to-end render of the Cookbook example.
 
 ## Appendix mode
 
-`templates/rollup-appendix.md` is an alternative renderer. Instead of expanding each `→ [[link]]` inline, it moves the linked note's content to an **Appendices** section at the end of the document and leaves a reference where the link was:
+The **appendix mode** command is an alternative render mode. Instead of expanding each `→ [[link]]` inline, it moves the linked note's content to an **Appendices** section at the end of the document and leaves a reference where the link was:
 
 ```
 **Covert Operations** (see Appendix 1.1.1)
 ```
 
-Appendix numbers are positional: `<section>.<subsection>.<n>` based on where the link sits in the body, and links found inside an appendix recurse into deeper numbers (`1.1.1.2`, `1.1.1.2.1`, ...). The main body stays short, a table of references, while all the pulled-in detail lives in numbered appendices. Same link, callout, and config rules as the main template; output is saved as `<Note> (appendix).pdf`.
+Appendix numbers are positional: `<section>.<subsection>.<n>` based on where the link sits in the body, and links found inside an appendix recurse into deeper numbers (`1.1.1.2`, `1.1.1.2.1`, ...). The main body stays short, a table of references, while all the pulled-in detail lives in numbered appendices. Same link, callout, and settings as the other commands; output is saved as `<Note> (appendix).pdf`.
 
 ## License
 

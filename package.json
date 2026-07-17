@@ -1,14 +1,18 @@
 {
   "name": "obsidian-rollup-to-pdf",
-  "version": "2.4.0",
-  "description": "Compile a tree of wiki-linked Obsidian notes into a single formatted PDF via Templater + Pandoc. Heading-relative nesting, inline page expansion, summary callouts.",
+  "version": "1.0.0",
+  "description": "Compile a tree of wiki-linked Obsidian notes into a single formatted PDF via Pandoc. Heading-relative nesting, inline or appendix-style page expansion, summary callouts.",
+  "main": "main.js",
   "license": "MIT",
   "scripts": {
-    "test": "node test/edge-cases.test.js && node test/example.test.js"
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "node test/edge-cases.test.js && node test/example.test.js",
+    "lint": "eslint .",
+    "check": "npm run lint && npm run build && npm test"
   },
   "keywords": [
     "obsidian",
-    "templater",
     "pandoc",
     "pdf",
     "markdown",
@@ -16,6 +20,17 @@
   ],
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/SVM0N/obsidian-rollup-to-pdf.git"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/parser": "^8.64.0",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.21.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-obsidianmd": "^0.4.1",
+    "obsidian": "^1.4.11",
+    "tslib": "^2.6.0",
+    "typescript": "^5.4.0"
   }
 }
