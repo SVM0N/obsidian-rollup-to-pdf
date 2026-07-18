@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.1 — Pandoc/xelatex auto-detection
+
+### Added
+- `src/detect.ts` checks known install locations for Pandoc and a PDF engine
+  directly by filesystem existence, sidestepping the fact that Obsidian.app
+  is launched by Finder/launchd and doesn't inherit shell PATH entries (e.g.
+  Homebrew's `/opt/homebrew/bin`) — a bare `pandoc`/`xelatex` that resolves
+  fine in a terminal can fail inside Obsidian with `spawn pandoc ENOENT`.
+  Used to pre-populate settings on first install, and via a "Locate" button
+  next to each path field in Settings.
+- README rewritten with a real before/after example (rendered through the
+  actual plugin, not a mockup) and a sharper pitch up top.
+
 ## 1.0.0 — plugin rewrite
 
 The renderer is now a real Obsidian plugin instead of a set of Templater
