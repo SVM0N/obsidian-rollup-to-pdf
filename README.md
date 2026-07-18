@@ -123,6 +123,16 @@ The **appendix mode** command is an alternative render mode. Instead of expandin
 
 Appendix numbers are positional: `<section>.<subsection>.<n>` based on where the link sits in the body, and links found inside an appendix recurse into deeper numbers (`1.1.1.2`, `1.1.1.2.1`, ...). The main body stays short, a table of references, while all the pulled-in detail lives in numbered appendices. Same link, callout, and settings as the other commands; output is saved as `<Note> (appendix).pdf`.
 
+## Permissions & behavior
+
+This plugin does more than the Obsidian vault API alone allows, because rendering a PDF requires it:
+
+- **Filesystem access outside the vault API** (Node's `fs`) — to write a temporary compiled Markdown file and LaTeX header next to your notes, and to resolve the vault's real on-disk path so it can hand that path to Pandoc.
+- **Shell execution** (Node's `child_process`, via `execFile` with an argument array — never a shell string) — to invoke Pandoc and your configured PDF engine. This is the entire point of the plugin: it's a thin, typed wrapper around a `pandoc` command line.
+- **Full vault enumeration** (`vault.getMarkdownFiles()`) — to resolve `→ [[wikilinks]]` to files, since a linked page can live anywhere in the vault, not just beside the note that links to it.
+
+No network requests of any kind. Desktop-only (`isDesktopOnly: true`) because Pandoc and LaTeX engines aren't available on mobile.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

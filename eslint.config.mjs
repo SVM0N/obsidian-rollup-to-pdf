@@ -17,14 +17,4 @@ export default defineConfig([
 		files: ["main.ts", "src/**/*.ts"],
 		languageOptions: { parser: tsparser, parserOptions: { project: "./tsconfig.json" } },
 	},
-	{
-		files: ["package.json"],
-		rules: {
-			// builtin-modules is dev-only build tooling (feeds esbuild's
-			// `external` list so Node core modules aren't bundled into
-			// main.js) — it is never shipped in the plugin runtime and has
-			// no meaningful drop-in alternative for that narrow purpose.
-			"depend/ban-dependencies": "off",
-		},
-	},
 ]);
