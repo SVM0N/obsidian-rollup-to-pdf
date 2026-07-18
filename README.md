@@ -1,8 +1,18 @@
 # Rollup to PDF
 
-An Obsidian plugin that compiles a tree of wiki-linked notes into a single, formatted PDF via [Pandoc](https://pandoc.org/).
+Turn a tree of wiki-linked Obsidian notes into one clean, typeset PDF — complete with a title page, table of contents, numbered sections, and styled callout boxes — in a single command.
 
-Point it at any note. Every inline `→ [[link]]` is expanded in place, nested one heading level below its context, and the whole tree is recursively flattened into one document with a table of contents and styled overview boxes.
+Obsidian's built-in PDF export handles one note at a time, as-is. Rollup to PDF handles the whole tree: point it at an index note, and every line-leading `→ [[link]]` it finds gets pulled in and nested one heading level below where it was linked — recursively, through as many notes as your outline has — until the whole thing is flattened into a single [Pandoc](https://pandoc.org/)-typeset document. No re-typing your outline into a separate export tool, no manually stitching notes together before exporting.
+
+**Good fit if** you keep a wiki-style knowledge base, recipe book, worldbuilding doc, or research notebook in Obsidian and want a polished PDF of the whole tree. **Not what you want if** you just need to export one note as-is — Obsidian's built-in PDF export already does that.
+
+## See it in action
+
+A note with a summary callout and one expansion link:
+
+![A markdown note reading "## Sourdough Bread", a summary callout, and a → [[Levain]] expansion link, next to the PDF it compiles into: a title page, table of contents, and numbered sections with a styled overview box](docs/img/example.png)
+
+That's the whole model: `→ [[Levain]]` under `## Sourdough Bread` becomes a numbered subsection one level below it, `[!summary]` becomes the shaded overview box, and the title page + table of contents are generated for free. Nest another index note under another heading and it keeps going, as deep as your outline goes.
 
 ## Authoring rules (read first)
 

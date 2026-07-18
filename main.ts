@@ -1,6 +1,7 @@
 import { Plugin, TFile } from "obsidian";
 import { DEFAULT_SETTINGS, RollupSettings, RollupSettingTab } from "./src/settings";
 import { renderRollup, Variant } from "./src/render";
+import { detectPandoc, detectPdfEngine } from "./src/detect";
 
 const COMMANDS: { id: string; name: string; variant: Variant }[] = [
 	{ id: "render-full", name: "Render rollup to PDF (full recursion)", variant: "full" },
@@ -34,7 +35,19 @@ export default class RollupToPdfPlugin extends Plugin {
 
 	async loadSettings() {
 		const data = (await this.loadData()) as Partial<RollupSettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, data ?? {});
+		// First install (no saved data yet): try to find real Pandoc/xelatex
+		// paths on disk rather than defaulting to bare "pandoc"/"xelatex",
+		// which only resolves if Obsidian happens to inherit a shell PATH
+		// that includes them (uncommon — Obsidian.app is normally launched
+		// by Finder/launchd, not a login shell).
+		const detected: Partial<RollupSettings> = {};
+		if (!data) {
+			const pandocPath = detectPandoc();
+			const pdfEnginePath = detectPdfEngine();
+			if (pandocPath) detected.pandocPath = pandocPath;
+			if (pdfEnginePath) detected.pdfEnginePath = pdfEnginePath;
+		}
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, detected, data ?? {});
 	}
 
 	async saveSettings() {
