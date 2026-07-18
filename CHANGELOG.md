@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.2 — release provenance + build cleanup
+
+### Added
+- `.github/workflows/release.yml` builds in CI and attaches a cryptographic
+  build-provenance attestation (`actions/attest-build-provenance`) to
+  release assets, so `main.js` can be verified as actually built from this
+  source rather than trusting a locally-built upload.
+- A "Permissions & behavior" README section disclosing the plugin's
+  filesystem access, shell execution, and full vault enumeration upfront.
+
+### Removed
+- The `builtin-modules` dev dependency — redundant with esbuild's
+  `platform: "node"`, which already treats Node core modules as external
+  without an explicit list (verified: bundle output is byte-identical
+  with and without it).
+
 ## 1.0.1 — Pandoc/xelatex auto-detection
 
 ### Added
