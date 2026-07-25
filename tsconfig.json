@@ -11,6 +11,16 @@
 		"importHelpers": true,
 		"isolatedModules": true,
 		"strict": true,
+		// Without this, node_modules/obsidian/obsidian.d.ts's own interface bugs
+		// (Menu/Modal/PopoverSuggest missing onHistoryBack) surface as type
+		// errors to anything that builds a TS program straight from this file —
+		// including ESLint's type-aware parser — which degrades inference
+		// broadly and floods unrelated files with spurious
+		// @typescript-eslint/no-unsafe-* warnings. `npm run build` papered over
+		// this with a CLI-only `-skipLibCheck` flag; putting it here instead
+		// makes every tool that reads this config (editors, ESLint, external
+		// reviewers) see the same, correct behavior.
+		"skipLibCheck": true,
 		"lib": ["DOM", "ES5", "ES6", "ES7", "ES2020"]
 	},
 	"include": ["**/*.ts"],

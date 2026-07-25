@@ -1,12 +1,12 @@
 {
   "name": "obsidian-rollup-to-pdf",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Compile a tree of wiki-linked Obsidian notes into a single formatted PDF via Pandoc. Heading-relative nesting, inline or appendix-style page expansion, summary callouts.",
   "main": "main.js",
   "license": "MIT",
   "scripts": {
     "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "build": "tsc -noEmit && node esbuild.config.mjs production",
     "test": "node test/edge-cases.test.js && node test/example.test.js",
     "lint": "eslint .",
     "check": "npm run lint && npm run build && npm test"
