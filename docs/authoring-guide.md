@@ -131,6 +131,9 @@ The renderer always:
 - Drops each page's own H1 (its title is supplied by the parent link, or by the document title for the root page)
 - Shifts all headings to fit their position in the tree (capped at h6)
 - Converts `[[wikilinks]]` to plain text
+- Resolves `![[image.jpg]]` embeds to the real image, wherever it lives in the vault
+- Converts Multi-Column Markdown regions (`--- start-multi-column: ... --- end-multi-column`) into real side-by-side LaTeX columns
+- Applies matching span styling (color/font/size) from your vault's enabled CSS snippets to `<span class="...">` runs
 - Adds a TOC automatically when the output has `###` headings (multi-level documents)
 - Guards against cycles: a link back to a page already open on the current branch renders as `*[see: PageName]*` instead of looping
 

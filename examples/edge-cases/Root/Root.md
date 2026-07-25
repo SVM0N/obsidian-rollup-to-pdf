@@ -92,3 +92,35 @@ Some prose first.
 
 ## Alpha Page
 → [[Sub/Alpha]]
+
+## Case W — Multi-Column Markdown region becomes a multicols environment
+
+--- start-multi-column: ID_test123
+
+```column-settings
+Number of Columns: 3
+Largest Column: standard
+```
+
+#### Column One
+![[Sub/pixel.png]]
+
+--- end-column ---
+
+#### Column Two
+![[Sub/pixel.png]]
+
+--- end-column ---
+
+#### Column Three
+![[Sub/pixel.png]]
+
+--- end-multi-column
+
+## Case X — image embeds resolve to real Pandoc image syntax
+![[Sub/pixel.png]]
+![[Sub/DoesNotExist.png]]
+
+## Case Y — CSS snippet span styling
+<span class="hanzi-line">你好</span> plain text after the span.
+<span class="disabled-class">should stay unstyled</span>

@@ -101,17 +101,17 @@ tlmgr install xecjk ctex
 ## Examples
 
 - [`examples/Cookbook`](examples/Cookbook) — a small, readable knowledge base. Open `Cookbook.md` and run **Render rollup to PDF** to see nesting, callouts, and cross-links in action.
-- [`examples/edge-cases`](examples/edge-cases) — a stress vault covering every behaviour (nesting math, the h6 cap, cycles, resolution rules, callouts, non-expanding arrows). Used by the test suite.
+- [`examples/edge-cases`](examples/edge-cases) — a stress vault covering every behaviour (nesting math, the h6 cap, cycles, resolution rules, callouts, non-expanding arrows, Multi-Column Markdown, image embeds, CSS snippet styling). Used by the test suite.
 
 ## Tests
 
-The test suite loads the renderer logic **directly out of `src/`** — there is no second copy of the logic to drift out of sync. `test/harness.js` bundles `src/walker.ts` (and its local dependencies) with esbuild, stubs the Obsidian vault API with the filesystem, and runs the real walker that ships inside `main.js`.
+The test suite loads the renderer logic **directly out of `src/`** — there is no second copy of the logic to drift out of sync. `test/harness.js` bundles `src/walker.ts` and `src/css-snippets.ts` (and their local dependencies) with esbuild, stubs the Obsidian vault API with the filesystem, and runs the real walker that ships inside `main.js`.
 
 ```bash
 npm test
 ```
 
-Covers 39 edge cases plus an end-to-end render of the Cookbook example.
+Covers 53 edge cases (including Multi-Column Markdown, image embeds, and CSS snippet styling) plus an end-to-end render of the Cookbook example.
 
 ## Appendix mode
 
@@ -123,13 +123,27 @@ The **appendix mode** command is an alternative render mode. Instead of expandin
 
 Appendix numbers are positional: `<section>.<subsection>.<n>` based on where the link sits in the body, and links found inside an appendix recurse into deeper numbers (`1.1.1.2`, `1.1.1.2.1`, ...). The main body stays short, a table of references, while all the pulled-in detail lives in numbered appendices. Same link, callout, and settings as the other commands; output is saved as `<Note> (appendix).pdf`.
 
+## Images
+
+`![[image.jpg]]` embeds are resolved to the real file on disk and rendered as actual images in the PDF (not just their filename as text). Works anywhere in a rollup, including inside Multi-Column Markdown columns (below). If the embed's target can't be found, the PDF shows `[image not found: ...]` instead of failing the whole render.
+
+## Multi-Column Markdown
+
+Notes using the [Multi-Column Markdown](https://github.com/ckRobinson/multi-column-markdown) community plugin's column syntax get converted to a real LaTeX `multicols` layout at export time, so the PDF shows actual side-by-side columns instead of literal `--- start-multi-column: ... ---` delimiter lines. Obsidian's own Reading view is untouched — this conversion only happens in the compiled copy handed to Pandoc, never on the source note.
+
+Only the current (non-deprecated), `---`-delimited MCM syntax is supported, and only **Number of Columns** is read from the `column-settings` block — border, alignment, and column-width settings are ignored. Columns are separated with a hard `\columnbreak` (rather than relying on the text filling each column naturally), which fits short column content like a heading plus a single image.
+
+## CSS snippet styling
+
+If a note uses a `<span class="...">` with a class defined in one of your vault's **enabled** CSS snippets, the PDF picks up that class's `color`, `font-family`, `font-size`, `font-weight`, and `font-style` (mapped to the closest LaTeX equivalent — colors need to be a hex/`rgb()` value or one of a small set of basic named colors, and `font-family` needs to be installed as a system font for your PDF engine to find). Disabled snippets, and any other CSS property or selector shape, are ignored. This is a best-effort mapping for simple inline text styling, not a general CSS-to-LaTeX engine.
+
 ## Permissions & behavior
 
 This plugin does more than the Obsidian vault API alone allows, because rendering a PDF requires it:
 
-- **Filesystem access outside the vault API** (Node's `fs`) — to write a temporary compiled Markdown file and LaTeX header next to your notes, and to resolve the vault's real on-disk path so it can hand that path to Pandoc.
+- **Filesystem access outside the vault API** (Node's `fs`) — to write a temporary compiled Markdown file and LaTeX header next to your notes, to resolve the vault's real on-disk path so it can hand that path to Pandoc, and to read `appearance.json` and enabled snippet files from your vault's config folder for CSS snippet styling (above). All of this stays local to your machine and your vault; nothing is uploaded anywhere.
 - **Shell execution** (Node's `child_process`, via `execFile` with an argument array — never a shell string) — to invoke Pandoc and your configured PDF engine. This is the entire point of the plugin: it's a thin, typed wrapper around a `pandoc` command line.
-- **Full vault enumeration** (`vault.getMarkdownFiles()`) — to resolve `→ [[wikilinks]]` to files, since a linked page can live anywhere in the vault, not just beside the note that links to it.
+- **Full vault enumeration** (`vault.getMarkdownFiles()` and `vault.getFiles()`) — to resolve `→ [[wikilinks]]` and `![[image embeds]]` to files, since a linked page or image can live anywhere in the vault, not just beside the note that references it.
 
 No network requests of any kind. Desktop-only (`isDesktopOnly: true`) because Pandoc and LaTeX engines aren't available on mobile.
 

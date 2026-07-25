@@ -116,6 +116,36 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
         ck("dedupe: no '### Alpha Page' title repeat", !/### Alpha Page/.test(seg));
     }
 
+    // W: Multi-Column Markdown region -> LaTeX multicols environment
+    {
+        const seg = compiled.split("## Case W")[1].split("## Case X")[0];
+        ck("W begin multicols with parsed column count", /\\begin\{multicols\}\{3\}/.test(seg));
+        ck("W end multicols present", /\\end\{multicols\}/.test(seg));
+        ck("W two columnbreaks for 3 columns", (seg.match(/\\columnbreak/g) || []).length === 2);
+        ck("W column headings pass through unchanged", /#### Column One/.test(seg) && /#### Column Two/.test(seg) && /#### Column Three/.test(seg));
+        ck("W no raw MCM delimiters leak through", !/start-multi-column/.test(seg) && !/end-multi-column/.test(seg) && !/end-column/.test(seg));
+        ck("W column-settings fence discarded", !/column-settings/.test(seg));
+        ck("W images inside columns resolved to Pandoc syntax", /!\[\]\(<[^>]*pixel\.png>\)/.test(seg));
+        ck("W no raw ![[ embeds leak through", !/!\[\[/.test(seg));
+    }
+
+    // X: image embeds resolve to real Pandoc image syntax; missing embed -> marker
+    {
+        const seg = compiled.split("## Case X")[1].split("## Case Y")[0];
+        ck("X image resolved to absolute path", /!\[\]\(<[^>]*Sub[/\\]pixel\.png>\)/.test(seg));
+        ck("X missing image gets an error marker, not a crash", /\[image not found: Sub\/DoesNotExist\.png\]/.test(seg));
+    }
+
+    // Y: CSS-snippet span styling — enabled class gets a LaTeX wrapper,
+    // disabled snippet's class is left unstyled.
+    {
+        const seg = compiled.split("## Case Y")[1] || "";
+        ck("Y styled span wrapped in raw LaTeX with mapped color/font", /`\{[^`]*\\textcolor\[HTML\]\{C0392B\}`\{=latex\}你好`\}`\{=latex\}/.test(seg));
+        ck("Y styled span carries font-family and font-size", /\\fontspec\{Noto Sans SC\}/.test(seg) && /\\fontsize\{10\.5\}/.test(seg));
+        ck("Y plain text after styled span untouched", /plain text after the span/.test(seg));
+        ck("Y disabled snippet's class left unstyled", /<span class="disabled-class">should stay unstyled<\/span>/.test(seg));
+    }
+
     // ---- depth-cap behaviour via MAX_DEPTH ----
     {
         const deep = await render(EDGE, "Root", "Root.md", 1);

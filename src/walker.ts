@@ -3,6 +3,19 @@ import * as path from "path";
 import { CALLOUT_RE, calloutBox, expansionTarget, pageTitle, shiftHeadingLine, stripBacklinks, stripFrontmatter, stripWikilinks } from "./text-utils";
 import { expandCsvViews } from "./csv-view";
 import { resolveFile } from "./resolve-file";
+import { expandMultiColumn } from "./multi-column";
+import { resolveImageEmbeds } from "./embeds";
+import { applySpanStyles, SpanStyle } from "./css-snippets";
+
+// Threaded through every recursive walk call: the vault's on-disk root (to
+// resolve image embeds to absolute paths Pandoc can read) and the span
+// styles scooped from the vault's enabled CSS snippets (css-snippets.ts).
+// Both are constant for a single render, so they ride along as one object
+// instead of two more positional parameters.
+export interface RenderContext {
+	vaultPath: string;
+	spanStyles: Map<string, SpanStyle>;
+}
 
 // ── Inline-expansion walker ──────────────────────────────────────
 // Every page is parsed identically (no index/leaf distinction). Walk top to
@@ -18,7 +31,10 @@ import { resolveFile } from "./resolve-file";
 // • "> [!summary]" / "> [!overview]" → Overview box; plain "> " blockquotes
 //   pass through unchanged.
 // • Cycles render as "*[see: X]*".
-export async function walkInline(app: App, content: string, baseLevel: number, fromDir: string, visited: Set<string>, depth: number, maxDepth: number): Promise<string> {
+export async function walkInline(app: App, content: string, baseLevel: number, fromDir: string, visited: Set<string>, depth: number, maxDepth: number, ctx: RenderContext): Promise<string> {
+	content = expandMultiColumn(content);
+	content = resolveImageEmbeds(app, content, fromDir, ctx.vaultPath);
+	content = applySpanStyles(content, ctx.spanStyles);
 	content = await expandCsvViews(app, content, fromDir);
 	const s = stripBacklinks(stripFrontmatter(content));
 	const lines = s.split("\n");
@@ -126,7 +142,7 @@ export async function walkInline(app: App, content: string, baseLevel: number, f
 
 			const nextVisited = new Set(visited);
 			nextVisited.add(tfile.path);
-			out.push(await walkInline(app, childContent, childBaseLevel, path.dirname(tfile.path).replace(/\\/g, "/"), nextVisited, depth + 1, maxDepth));
+			out.push(await walkInline(app, childContent, childBaseLevel, path.dirname(tfile.path).replace(/\\/g, "/"), nextVisited, depth + 1, maxDepth, ctx));
 
 			sawLinkUnderHeading = true;
 			contentSinceLink = false;
@@ -173,7 +189,11 @@ export async function walkAppendix(
 	maxDepth: number,
 	numberPrefix: string,
 	appendices: Appendix[],
+	ctx: RenderContext,
 ): Promise<string> {
+	content = expandMultiColumn(content);
+	content = resolveImageEmbeds(app, content, fromDir, ctx.vaultPath);
+	content = applySpanStyles(content, ctx.spanStyles);
 	content = await expandCsvViews(app, content, fromDir);
 	const s = stripBacklinks(stripFrontmatter(content));
 	const lines = s.split("\n");
@@ -287,7 +307,7 @@ export async function walkAppendix(
 			const innerBase = 3;
 
 			if (depth + 1 <= maxDepth) {
-				entry.content = await walkAppendix(app, childContent, innerBase, childDir, nextVisited, depth + 1, maxDepth, here, appendices);
+				entry.content = await walkAppendix(app, childContent, innerBase, childDir, nextVisited, depth + 1, maxDepth, here, appendices, ctx);
 			} else {
 				entry.content = stripWikilinks(stripBacklinks(stripFrontmatter(childContent)));
 			}

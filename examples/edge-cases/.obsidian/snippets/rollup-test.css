@@ -1,0 +1,16 @@
+/* Test fixture for Rollup to PDF's CSS-snippet span styling (see
+   src/css-snippets.ts). Not a real vault theme — just enough to exercise
+   colour, font-family, and font-size mapping. */
+
+.hanzi-line {
+	color: #c0392b;
+	font-family: "Noto Sans SC", sans-serif;
+	font-size: 14px;
+}
+
+/* This class is defined but not referenced by any enabled snippet's
+   selector the test notes actually use with a *different* name, so a test
+   can assert that only enabled + matched classes affect output. */
+.unused-test-class {
+	color: blue;
+}

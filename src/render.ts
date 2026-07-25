@@ -3,13 +3,17 @@ import * as fs from "fs";
 import * as path from "path";
 import { execFile } from "child_process";
 import { RollupSettings } from "./settings";
-import { walkInline, walkAppendix, Appendix } from "./walker";
+import { walkInline, walkAppendix, Appendix, RenderContext } from "./walker";
+import { loadSnippetSpanStyles } from "./css-snippets";
 
 export type Variant = "full" | "depth1" | "depth2" | "appendix";
 
 const LATEX_HEADER = `\\usepackage{tcolorbox}
 \\tcbuselibrary{skins}
 \\usepackage{titlesec}
+\\usepackage{multicol}
+\\usepackage{xcolor}
+\\usepackage{fontspec}
 % Make paragraph (h4) and subparagraph (h5) display as standalone headings
 % with their own line, instead of LaTeX's default run-in (inline) style.
 \\titleformat{\\paragraph}[hang]{\\normalfont\\normalsize\\bfseries}{\\theparagraph}{1em}{}
@@ -88,11 +92,12 @@ export async function renderRollup(app: App, activeFile: TFile, settings: Rollup
 	const indexTitle = activeFile.basename;
 
 	const visited = new Set<string>([activeFile.path]);
+	const ctx: RenderContext = { vaultPath, spanStyles: loadSnippetSpanStyles(app, vaultPath) };
 
 	let compiled: string;
 	if (isAppendix) {
 		const appendices: Appendix[] = [];
-		const body = await walkAppendix(app, indexContent, 1, indexDir, visited, 0, maxDepth, "", appendices);
+		const body = await walkAppendix(app, indexContent, 1, indexDir, visited, 0, maxDepth, "", appendices, ctx);
 		appendices.sort((a, b) => (numKey(a.number) < numKey(b.number) ? -1 : numKey(a.number) > numKey(b.number) ? 1 : 0));
 		let appendixMd = "";
 		if (appendices.length) {
@@ -108,7 +113,7 @@ export async function renderRollup(app: App, activeFile: TFile, settings: Rollup
 		// at the top heading level (#) rather than being pushed under a
 		// redundant "# Title" heading — this reclaims one heading level for
 		// deep rollups.
-		const body = await walkInline(app, indexContent, 1, indexDir, visited, 0, maxDepth);
+		const body = await walkInline(app, indexContent, 1, indexDir, visited, 0, maxDepth, ctx);
 		compiled = `${body}\n`;
 	}
 

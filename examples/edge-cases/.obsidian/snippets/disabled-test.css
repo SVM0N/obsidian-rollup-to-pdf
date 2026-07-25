@@ -1,0 +1,5 @@
+/* Not listed in appearance.json's enabledCssSnippets — must NOT affect
+   render output. Exercises that disabled snippets are ignored. */
+.disabled-class {
+	color: green;
+}
