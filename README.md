@@ -55,8 +55,13 @@ Full details: [docs/authoring-guide.md](docs/authoring-guide.md).
 
 ## Install
 
-This plugin is not yet in Obsidian's community plugin store. Until then, install it
-with [BRAT](https://github.com/TfTHacker/obsidian42-brat):
+**Rollup to PDF** is available in Obsidian's community plugin store:
+
+1. In Obsidian, open **Settings → Community plugins → Browse**.
+2. Search for **Rollup to PDF** and click **Install**, then **Enable**.
+
+To track the latest beta before it's released, or if you'd rather install from
+this repo directly, use [BRAT](https://github.com/TfTHacker/obsidian42-brat) instead:
 
 1. Install **BRAT** from Community Plugins and enable it.
 2. In BRAT's settings, choose **Add Beta Plugin** and enter this repo's URL
