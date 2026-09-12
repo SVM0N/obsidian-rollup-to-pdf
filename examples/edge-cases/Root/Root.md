@@ -124,3 +124,50 @@ Largest Column: standard
 ## Case Y — CSS snippet span styling
 <span class="hanzi-line">你好</span> plain text after the span.
 <span class="disabled-class">should stay unstyled</span>
+
+## Case Z — tables and image attachments
+Prose with no blank line before the table, as Obsidian allows:
+| Attachment | Size hint | Notes |
+|---|---|---|
+| pixel | 240 | ![[Sub/pixel.png\|240]] embedded in a cell |
+| photo | none | ![[Sub/photo.webp]] |
+Trailing prose with no blank line after the table.
+
+- a list item
+| C | D |
+|---|---|
+| 3 | 4 |
+
+```
+| not | a | table |
+|---|---|---|
+```
+
+![[Sub/pixel.png|120x60]]
+![[Sub/pixel.png|A pixel, greatly enlarged]]
+
+## Case AA — a table whose header row is entirely image embeds
+**3rd tone + 1st/2nd/3rd/4th tone**
+
+| ![[Sub/pixel.png]] | ![[Sub/pixel.png]] | ![[Sub/pixel.png]] | ![[Sub/pixel.png]] |
+| ------------------ | ------------------ | ------------------ | ------------------ |
+| 手机                 | 手镯                 | 手表                 | 手套                 |
+| shǒu jī            | shǒu zhuó          | shǒu biǎo          | shǒu tào           |
+
+## Case AB — csv-view table carries image embeds and CJK text
+```csv-view
+file: ./Sub/vocab.csv
+mode: table
+```
+
+## Case AC — csv-inline fence with an ordered columns: allowlist
+```csv-inline
+file: ./Sub/vocab.csv
+columns: Image, Character
+```
+
+## Case AD — hide: drops columns from what's left
+```csv-view
+file: ./Sub/vocab.csv
+hide: Notes, Translation
+```

@@ -4,7 +4,8 @@ import { CALLOUT_RE, calloutBox, expansionTarget, pageTitle, shiftHeadingLine, s
 import { expandCsvViews } from "./csv-view";
 import { resolveFile } from "./resolve-file";
 import { expandMultiColumn } from "./multi-column";
-import { resolveImageEmbeds } from "./embeds";
+import { isolateBlockImages, resolveImageEmbeds } from "./embeds";
+import { normalizeTables } from "./tables";
 import { applySpanStyles, SpanStyle } from "./css-snippets";
 
 // Threaded through every recursive walk call: the vault's on-disk root (to
@@ -33,9 +34,16 @@ export interface RenderContext {
 // • Cycles render as "*[see: X]*".
 export async function walkInline(app: App, content: string, baseLevel: number, fromDir: string, visited: Set<string>, depth: number, maxDepth: number, ctx: RenderContext): Promise<string> {
 	content = expandMultiColumn(content);
-	content = resolveImageEmbeds(app, content, fromDir, ctx.vaultPath);
-	content = applySpanStyles(content, ctx.spanStyles);
+	// CSV expansion comes before image resolution and span styling, not after:
+	// it splices new Markdown into the page, and an `![[shot.png]]` sitting in
+	// a CSV cell has to be rewritten by the passes below like any other embed.
+	// Run the other way round, those cells reach the PDF as bare "!shot.png".
 	content = await expandCsvViews(app, content, fromDir);
+	content = resolveImageEmbeds(app, content, fromDir, ctx.vaultPath);
+	content = isolateBlockImages(content);
+	content = applySpanStyles(content, ctx.spanStyles);
+	// Last, so tables produced by the passes above get separated too.
+	content = normalizeTables(content);
 	const s = stripBacklinks(stripFrontmatter(content));
 	const lines = s.split("\n");
 	// The page's shallowest heading maps to baseLevel. With H1s omitted (notes
@@ -192,9 +200,16 @@ export async function walkAppendix(
 	ctx: RenderContext,
 ): Promise<string> {
 	content = expandMultiColumn(content);
-	content = resolveImageEmbeds(app, content, fromDir, ctx.vaultPath);
-	content = applySpanStyles(content, ctx.spanStyles);
+	// CSV expansion comes before image resolution and span styling, not after:
+	// it splices new Markdown into the page, and an `![[shot.png]]` sitting in
+	// a CSV cell has to be rewritten by the passes below like any other embed.
+	// Run the other way round, those cells reach the PDF as bare "!shot.png".
 	content = await expandCsvViews(app, content, fromDir);
+	content = resolveImageEmbeds(app, content, fromDir, ctx.vaultPath);
+	content = isolateBlockImages(content);
+	content = applySpanStyles(content, ctx.spanStyles);
+	// Last, so tables produced by the passes above get separated too.
+	content = normalizeTables(content);
 	const s = stripBacklinks(stripFrontmatter(content));
 	const lines = s.split("\n");
 	let topLevel = 7;
@@ -309,7 +324,16 @@ export async function walkAppendix(
 			if (depth + 1 <= maxDepth) {
 				entry.content = await walkAppendix(app, childContent, innerBase, childDir, nextVisited, depth + 1, maxDepth, here, appendices, ctx);
 			} else {
-				entry.content = stripWikilinks(stripBacklinks(stripFrontmatter(childContent)));
+				// Depth cap: the page isn't walked, but it still has to go
+				// through the same rewrites the walk would have applied —
+				// otherwise its images arrive as bare "!name.png" text and its
+				// tables as literal pipes.
+				let flat = expandMultiColumn(childContent);
+				flat = await expandCsvViews(app, flat, childDir);
+				flat = resolveImageEmbeds(app, flat, childDir, ctx.vaultPath);
+				flat = isolateBlockImages(flat);
+				flat = applySpanStyles(flat, ctx.spanStyles);
+				entry.content = stripWikilinks(stripBacklinks(stripFrontmatter(normalizeTables(flat))));
 			}
 			continue;
 		}

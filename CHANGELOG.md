@@ -1,5 +1,83 @@
 # Changelog
 
+## 1.2.0 — tables, image embeds, CJK text, and CSV column control
+
+### Fixed
+- **Tables that Obsidian renders but Pandoc didn't.** Obsidian lets a pipe
+  table begin on the line directly after a paragraph, a list item, or an
+  image; Pandoc requires a blank line and otherwise swallows the table into
+  the running paragraph, printing it as a stream of literal `|` characters.
+  `src/tables.ts` re-separates a real table (a delimiter row under a row of
+  pipes) before Pandoc sees it, leaving fenced code and blockquote bodies
+  alone.
+- **Image embeds inside a table cell were lost entirely.** Obsidian requires
+  the pipe in `![[shot.png|300]]` to be escaped as `\|` inside a cell, which
+  left a trailing backslash on the filename, failed the extension test, and
+  degraded the whole embed to the bare text `!300`. Both spellings are now
+  accepted.
+- **Obsidian's pixel size hints were discarded**, so every image rendered at
+  the full width of the text block. `![[shot.png|300]]` and
+  `![[shot.png|300x200]]` now carry over as Pandoc width/height attributes.
+- **Consecutive image embeds ran together side by side** and overflowed the
+  right margin, because Pandoc reads two adjacent embed lines as one
+  paragraph. Each image-only line now gets its own block, matching how
+  Obsidian stacks them.
+- **One unreadable attachment killed the entire render.** A `.webp`, `.gif`,
+  `.svg`, `.avif`, `.heic`, `.tiff`, or `.bmp` embed reached xelatex as
+  `\includegraphics` and aborted the run with "Unknown graphics extension",
+  losing the PDF. Those formats now degrade to a visible
+  `[image format not supported by LaTeX: ...]` marker.
+- **Depth-capped appendix content skipped every rewrite.** A page pulled in
+  at the depth limit was emitted raw, so its images arrived as bare
+  `!name.png` text and its tables as literal pipes. It now goes through the
+  same passes as a walked page.
+- **Characters the LaTeX engine couldn't draw vanished silently.** xelatex
+  reports an unrenderable glyph on stderr and omits it; Pandoc still exits 0,
+  so a note of Chinese vocabulary exported with the CJK font setting empty
+  (the default) reported "✓ PDF saved" with every hanzi missing. The
+  completion notice now names the dropped characters and points at the
+  setting.
+- **A long CJK export could fail outright.** Each dropped glyph costs ~110
+  bytes of warning output, enough for a large vocabulary rollup to overrun
+  Node's 1 MB `execFile` buffer, kill Pandoc mid-run, and report a build
+  error for a document that would have compiled. The buffer is now 32 MB.
+- **Chinese/Japanese/Korean characters were dropped from every PDF.** The CJK
+  font setting shipped blank, and with it blank the engine draws no hanzi,
+  kana or hangul at all — which is what the two entries above only *reported*.
+  `detectCjkFont()` now finds an installed CJK font by checking known font
+  files on disk (PingFang SC / Songti SC / Hiragino Sans GB on macOS,
+  Microsoft YaHei / SimSun on Windows, Noto Sans CJK / WenQuanYi on Linux),
+  and the setting is backfilled on load wherever it is still empty — not only
+  on first install, since every existing install starts blank. Settings gains
+  a "Locate" button for it, matching the Pandoc and PDF-engine fields.
+- **Image embeds inside a `csv-view` table never resolved.** CSV expansion ran
+  *after* image resolution, so an `![[shot.png]]` living in a CSV cell was
+  spliced into the page too late to be rewritten and reached the PDF as the
+  bare text `!shot.png`. The passes are reordered so spliced-in CSV Markdown
+  goes through image resolution and span styling like anything typed into the
+  note.
+
+### Added
+- **`columns:` and `hide:` directives for `csv-view` blocks.** `columns:` is an
+  ordered allowlist — the PDF shows those columns in the order written in the
+  directive, not the order they appear in the file — and `hide:` drops columns
+  from whatever `columns:` left, so both compose when given together. Names
+  match ignoring case and surrounding whitespace; a name matching no column is
+  ignored rather than failing the render. The filter is applied before grouping
+  and collapsing, so `mode:`/`collapse:` operate on the columns that remain.
+- **The ```` ```csv-inline ```` fence name is recognised** alongside
+  ```` ```csv-view ````. The two differ only in on-screen layout, which has no
+  analogue in a PDF, so both become one static table.
+- A README section documenting CSV blocks and, in particular, that a `file:`
+  path containing a slash but no leading `./` resolves from the vault root
+  rather than from the note.
+
+### Added
+- Cases Z, AA, AB, AC and AD in `examples/edge-cases` covering all of the
+  above — including a table whose entire header row is image embeds over CJK
+  body rows, and `csv-view`/`csv-inline` tables whose cells carry embeds and
+  CJK text — and 33 tests over them (86 edge-case tests total, up from 53).
+
 ## 1.0.2 — release provenance + build cleanup
 
 ### Added

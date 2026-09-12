@@ -1,6 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting, TextComponent } from "obsidian";
 import type RollupToPdfPlugin from "../main";
-import { detectPandoc, detectPdfEngine } from "./detect";
+import { detectCjkFont, detectPandoc, detectPdfEngine } from "./detect";
 
 export interface RollupSettings {
 	pandocPath: string;
@@ -105,16 +105,35 @@ export class RollupSettingTab extends PluginSettingTab {
 					}),
 			);
 
+		let cjkText: TextComponent | undefined;
 		new Setting(containerEl)
 			.setName("CJK font")
-			.setDesc("Font used for Chinese/Japanese/Korean glyphs (must be installed on your system). Leave blank to skip CJK font configuration.")
-			.addText((text) =>
-				text
-					.setPlaceholder("e.g. Noto Sans CJK SC")
+			.setDesc(
+				"Font used for Chinese/Japanese/Korean glyphs (must be installed on your system). Left blank, the LaTeX engine drops every CJK character from the PDF without failing the render — so this is filled in automatically when a suitable font is found.",
+			)
+			.addText((text) => {
+				cjkText = text;
+				text.setPlaceholder("e.g. Noto Sans CJK SC")
 					.setValue(this.plugin.settings.cjkFont)
 					.onChange(async (value) => {
 						this.plugin.settings.cjkFont = value.trim();
 						await this.plugin.saveSettings();
+					});
+			})
+			.addExtraButton((button) =>
+				button
+					.setIcon("search")
+					.setTooltip("Locate a CJK font on this machine")
+					.onClick(async () => {
+						const found = detectCjkFont();
+						if (!found) {
+							new Notice("Couldn't find a CJK font in the usual system locations. Enter one manually.");
+							return;
+						}
+						this.plugin.settings.cjkFont = found;
+						await this.plugin.saveSettings();
+						cjkText?.setValue(found);
+						new Notice(`Found CJK font: ${found}`);
 					}),
 			);
 

@@ -139,11 +139,79 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
     // Y: CSS-snippet span styling — enabled class gets a LaTeX wrapper,
     // disabled snippet's class is left unstyled.
     {
-        const seg = compiled.split("## Case Y")[1] || "";
+        const seg = (compiled.split("## Case Y")[1] || "").split("## Case Z")[0];
         ck("Y styled span wrapped in raw LaTeX with mapped color/font", /`\{[^`]*\\textcolor\[HTML\]\{C0392B\}`\{=latex\}你好`\}`\{=latex\}/.test(seg));
         ck("Y styled span carries font-family and font-size", /\\fontspec\{Noto Sans SC\}/.test(seg) && /\\fontsize\{10\.5\}/.test(seg));
         ck("Y plain text after styled span untouched", /plain text after the span/.test(seg));
         ck("Y disabled snippet's class left unstyled", /<span class="disabled-class">should stay unstyled<\/span>/.test(seg));
+    }
+
+    // Z: Obsidian-legal tables (no blank line around them) are re-separated so
+    // Pandoc sees a table; image embeds carry their size hint and survive the
+    // "\\|" escaping Obsidian requires inside a table cell.
+    {
+        const seg = (compiled.split("## Case Z")[1] || "").split("## Case AA")[0];
+        const lines = seg.split("\n");
+        const delim = lines.findIndex((l) => /^\|---\|/.test(l));
+        ck("Z blank line inserted before the table header", lines[delim - 2].trim() === "");
+        ck("Z table header still directly above the delimiter", /^\| Attachment \|/.test(lines[delim - 1]));
+        ck("Z blank line inserted after the last table row", lines[delim + 3].trim() === "");
+        ck("Z prose after the table survives", /Trailing prose with no blank line after the table\./.test(seg));
+        ck("Z table after a list item is separated too", /- a list item\n\n\| C \| D \|/.test(seg));
+        ck("Z pipe table inside a code fence is left alone", /```\n\| not \| a \| table \|\n\|---\|---\|---\|\n```/.test(seg));
+        ck("Z escaped-pipe embed in a cell resolves with its width", /!\[\]\(<[^>]*pixel\.png>\)\{width=240px\}/.test(seg));
+        ck("Z no mangled embed remnant in the cell", !/!240/.test(seg));
+        ck("Z width x height hint becomes both attributes", /\{width=120px height=60px\}/.test(seg));
+        ck("Z non-numeric alias stays alt text, not a size", /!\[A pixel, greatly enlarged\]\(<[^>]*pixel\.png>\)$/m.test(seg));
+        ck("Z LaTeX-unrenderable format degrades to a marker", /\[image format not supported by LaTeX: photo\.webp\]/.test(seg));
+        ck("Z consecutive image embeds each get their own block", /\{width=120px height=60px\}\n\n!\[A pixel, greatly enlarged\]/.test(seg));
+        ck("Z no raw ![[ embeds leak through", !/!\[\[/.test(seg));
+    }
+
+    // AA: the shape a real vocabulary note takes — a bold line, then straight
+    // into a table whose whole header row is image embeds.
+    {
+        const seg = (compiled.split("## Case AA")[1] || "").split("## Case AB")[0];
+        const lines = seg.split("\n");
+        const delim = lines.findIndex((l) => /^\| -+ \|/.test(l));
+        ck("AA bold line separated from the table it precedes", lines[delim - 2].trim() === "" && /3rd tone/.test(lines[delim - 3]));
+        ck("AA all four header cells resolved to images", (lines[delim - 1].match(/!\[\]\(<[^>]*pixel\.png>\)/g) || []).length === 4);
+        ck("AA header row stays a single line", lines[delim - 1].split("|").length === 6);
+        ck("AA image-isolation left the header row alone", !/^!\[\]\(</m.test(lines[delim - 1]));
+        ck("AA CJK body rows pass through intact", /\| 手机 +\| 手镯 +\| 手表 +\| 手套 +\|/.test(seg));
+        ck("AA pinyin diacritics survive", /shǒu zhuó/.test(seg));
+        ck("AA no raw ![[ embeds leak through", !/!\[\[/.test(seg));
+    }
+
+    // AB: a csv-view table is spliced into the page as fresh Markdown, so the
+    // embeds and CJK text inside the CSV have to go through the same rewrites
+    // as anything typed in the note. Expanding the CSV after image resolution
+    // (the old order) left those cells as bare "!name.png" text.
+    {
+        const seg = (compiled.split("## Case AB")[1] || "").split("## Case AC")[0];
+        ck("AB csv rows resolved to real images", (seg.match(/!\[\]\(<[^>]*pixel\.png>\)/g) || []).length === 2);
+        ck("AB csv cell size hint survives mdTable's pipe escaping", /!\[\]\(<[^>]*pixel\.png>\)\{width=80px\}/.test(seg));
+        ck("AB no mangled embed remnant from the csv", !/!80/.test(seg) && !/!Sub\/pixel/.test(seg));
+        ck("AB CJK from the csv passes through", /\| 听 \| tīng \|/.test(seg) && /\| 飞机 \| fēijī \|/.test(seg));
+        ck("AB no raw ![[ embeds leak through", !/!\[\[/.test(seg));
+    }
+
+    // AC/AD: `columns:` is an ordered allowlist, `hide:` a denylist over what
+    // it leaves. The csv-inline fence is the same block type as csv-view as far
+    // as a PDF is concerned, so both names expand.
+    {
+        const seg = (compiled.split("## Case AC")[1] || "").split("## Case AD")[0];
+        ck("AC csv-inline fence expands like csv-view", !/```[ \t]*csv-/.test(seg) && /\| Image \| Character \|/.test(seg));
+        ck("AC columns: honours the order written, not the file's", /\| Image \| Character \|/.test(seg));
+        ck("AC columns: drops everything unlisted", !/Pinyin|Translation|drill this one/.test(seg));
+        ck("AC selected image column still resolves", /!\[\]\(<[^>]*pixel\.png>\)\{width=80px\}/.test(seg));
+    }
+    {
+        const seg = compiled.split("## Case AD")[1] || "";
+        ck("AD hide: removes the named columns", !/Notes|Translation|compound word/.test(seg));
+        ck("AD hide: keeps the rest in file order", /\| Character \| Pinyin \| Image \|/.test(seg));
+        ck("AD CJK rows survive the column filter", /\| 听 \| tīng \|/.test(seg) && /\| 飞机 \| fēijī \|/.test(seg));
+        ck("AD no raw ![[ embeds leak through", !/!\[\[/.test(seg));
     }
 
     // ---- depth-cap behaviour via MAX_DEPTH ----

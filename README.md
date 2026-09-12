@@ -78,7 +78,7 @@ Open **Settings → Rollup to PDF** and set:
 
 - **Pandoc path** — `pandoc` if it's on your `PATH`, or a full path (find it with `which pandoc`).
 - **PDF engine path** — a Unicode-capable LaTeX engine, e.g. `xelatex` (find it with `which xelatex`).
-- **CJK font** — a font installed on your system for Chinese/Japanese/Korean glyphs, e.g. `PingFang SC` (macOS) or `Noto Sans CJK SC` (Linux/Windows). Leave blank if you don't need CJK support.
+- **CJK font** — a font installed on your system for Chinese/Japanese/Korean glyphs, e.g. `PingFang SC` (macOS) or `Noto Sans CJK SC` (Linux/Windows). Filled in automatically: the plugin looks for a CJK font on disk and sets this the first time it loads with the field empty, so Chinese, Japanese and Korean text renders without you configuring anything. Use the **Locate** button to re-detect, or type a family name to override. If it is ever left blank while exporting CJK text, the LaTeX engine drops those characters from the PDF without failing the build — the plugin detects that and says so in the completion notice, listing the characters it lost.
 - **Page margin** — e.g. `2cm`.
 
 ### Render
@@ -106,7 +106,7 @@ tlmgr install xecjk ctex
 ## Examples
 
 - [`examples/Cookbook`](examples/Cookbook) — a small, readable knowledge base. Open `Cookbook.md` and run **Render rollup to PDF** to see nesting, callouts, and cross-links in action.
-- [`examples/edge-cases`](examples/edge-cases) — a stress vault covering every behaviour (nesting math, the h6 cap, cycles, resolution rules, callouts, non-expanding arrows, Multi-Column Markdown, image embeds, CSS snippet styling). Used by the test suite.
+- [`examples/edge-cases`](examples/edge-cases) — a stress vault covering every behaviour (nesting math, the h6 cap, cycles, resolution rules, callouts, non-expanding arrows, Multi-Column Markdown, image embeds, tables, CSS snippet styling). Used by the test suite.
 
 ## Tests
 
@@ -116,7 +116,7 @@ The test suite loads the renderer logic **directly out of `src/`** — there is 
 npm test
 ```
 
-Covers 53 edge cases (including Multi-Column Markdown, image embeds, and CSS snippet styling) plus an end-to-end render of the Cookbook example.
+Covers 86 edge cases (including Multi-Column Markdown, image embeds, tables, csv-view blocks, and CSS snippet styling) plus an end-to-end render of the Cookbook example.
 
 ## Appendix mode
 
@@ -130,7 +130,36 @@ Appendix numbers are positional: `<section>.<subsection>.<n>` based on where the
 
 ## Images
 
-`![[image.jpg]]` embeds are resolved to the real file on disk and rendered as actual images in the PDF (not just their filename as text). Works anywhere in a rollup, including inside Multi-Column Markdown columns (below). If the embed's target can't be found, the PDF shows `[image not found: ...]` instead of failing the whole render.
+`![[image.jpg]]` embeds are resolved to the real file on disk and rendered as actual images in the PDF (not just their filename as text). Works anywhere in a rollup — including inside a table cell, where Obsidian's escaped form `![[image.jpg\|300]]` is understood — and inside Multi-Column Markdown columns (below).
+
+Obsidian's size syntax carries over: `![[shot.png|300]]` sets the width and `![[shot.png|300x200]]` sets both dimensions, in pixels. Without a size, an image is scaled down to fit the text block but never scaled up. A non-numeric alias (`![[shot.png|The login screen]]`) becomes the image's alt text, which Pandoc renders as a caption. Each embed that sits alone on its line gets its own block, so consecutive images stack down the page as they do in Obsidian rather than running together side by side.
+
+Two cases degrade to a visible marker instead of failing the whole render: an embed whose target can't be found shows `[image not found: ...]`, and an attachment in a format no LaTeX engine can read (`.webp`, `.gif`, `.svg`, `.avif`, `.heic`, `.tiff`, `.bmp`) shows `[image format not supported by LaTeX: ...]`. Convert those to PNG or JPEG to have them appear.
+
+## Tables
+
+Markdown tables render as real typeset tables. Obsidian lets a table start on the line immediately after a paragraph, a list item, or an image, with no blank line between; Pandoc does not, and would print such a table as a row of literal `|` characters. The compiled copy handed to Pandoc re-separates those tables automatically, so a table renders in the PDF wherever Obsidian renders one. Tables written inside a fenced code block are left as literal text.
+
+## CSV tables
+
+Notes using the CSV Card View community plugin's ```` ```csv-view ```` / ```` ```csv-inline ```` blocks get the referenced CSV read at export time and rendered as a real typeset table, instead of the block printing as literal source.
+
+````
+```csv-view
+file: ./Sub/vocab.csv
+columns: Character, Image
+```
+````
+
+| Directive | Effect |
+|---|---|
+| `file:` | The CSV to read. A bare filename is resolved next to the note; `./sub/x.csv` and `../x.csv` are note-relative; a path **with a slash but no leading `./` is vault-relative**. Must be inside the vault, and the path must match exactly — there's no vault-wide fallback search as there is for `[[links]]`. |
+| `columns:` | Ordered allowlist — only these columns are shown, in the order written here rather than the order in the file. |
+| `hide:` | Drops these columns from whatever `columns:` left, so the two compose when both are given. |
+| `mode:` | `cards`, `card`, `library`, `kanban` or `kanban-genre` group the rows into one labelled sub-table per value of a detected Status/Category column. Anything else is a single flat table. |
+| `collapse:` | For the grouped modes, group values to leave out entirely. |
+
+Column names in `columns:` and `hide:` are matched ignoring case and surrounding spaces; a name matching no column is ignored rather than failing the render. Cell contents go through the same rewrites as text typed into the note, so `![[image.png]]` embeds in CSV cells become real images. Long bare URLs are shortened to `[host](url)` so they can't overflow the page.
 
 ## Multi-Column Markdown
 

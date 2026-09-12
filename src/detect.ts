@@ -90,3 +90,62 @@ function findInTexliveYears(root: string, binary: string, archHint?: string): st
 	}
 	return null;
 }
+
+// A LaTeX engine only draws a Chinese/Japanese/Korean glyph if a CJK font is
+// configured; with the setting empty, xelatex drops every hanzi/kana/hangul
+// with nothing but a stderr warning and still exits 0, so a vocabulary note
+// compiles to a "successful" PDF full of holes. Rather than ship an empty
+// default, look for a CJK font the engine is known to be able to find.
+//
+// Each candidate is a (file we can test for, family name fontspec resolves)
+// pair: the file check is what makes this safe, since naming a font that
+// isn't installed doesn't degrade the render, it aborts it.
+interface FontCandidate {
+	file: string;
+	family: string;
+}
+
+function firstExistingFamily(candidates: FontCandidate[]): string | null {
+	return candidates.find((c) => fs.existsSync(c.file))?.family ?? null;
+}
+
+export function detectCjkFont(): string | null {
+	const home = os.homedir();
+	const platform = os.platform();
+
+	if (platform === "darwin") {
+		return firstExistingFamily([
+			// PingFang is the system default on modern macOS, but on some
+			// versions it ships as an on-demand asset outside /System/Library/
+			// Fonts — hence the fallbacks, all of which are always present.
+			{ file: "/System/Library/Fonts/PingFang.ttc", family: "PingFang SC" },
+			{ file: "/System/Library/Fonts/Supplemental/Songti.ttc", family: "Songti SC" },
+			{ file: "/System/Library/Fonts/Hiragino Sans GB.ttc", family: "Hiragino Sans GB" },
+			{ file: "/System/Library/Fonts/STHeiti Light.ttc", family: "Heiti SC" },
+			{ file: "/System/Library/Fonts/Supplemental/Arial Unicode.ttf", family: "Arial Unicode MS" },
+		]);
+	}
+	if (platform === "linux") {
+		return firstExistingFamily([
+			{ file: "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", family: "Noto Sans CJK SC" },
+			{ file: "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf", family: "Noto Sans CJK SC" },
+			{ file: "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc", family: "Noto Sans CJK SC" },
+			{ file: "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc", family: "Noto Sans CJK SC" },
+			{ file: "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc", family: "Noto Sans CJK SC" },
+			{ file: path.join(home, ".local/share/fonts/NotoSansCJK-Regular.ttc"), family: "Noto Sans CJK SC" },
+			{ file: "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc", family: "WenQuanYi Zen Hei" },
+			{ file: "/usr/share/fonts/wenquanyi/wqy-zenhei/wqy-zenhei.ttc", family: "WenQuanYi Zen Hei" },
+		]);
+	}
+	if (platform === "win32") {
+		const fonts = path.join(process.env.SystemRoot || "C:\\Windows", "Fonts");
+		return firstExistingFamily([
+			{ file: path.join(fonts, "msyh.ttc"), family: "Microsoft YaHei" },
+			{ file: path.join(fonts, "msyh.ttf"), family: "Microsoft YaHei" },
+			{ file: path.join(fonts, "simsun.ttc"), family: "SimSun" },
+			{ file: path.join(fonts, "meiryo.ttc"), family: "Meiryo" },
+			{ file: path.join(fonts, "malgun.ttf"), family: "Malgun Gothic" },
+		]);
+	}
+	return null;
+}

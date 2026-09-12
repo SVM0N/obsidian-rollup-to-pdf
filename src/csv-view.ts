@@ -1,10 +1,17 @@
 import type { App, TFile } from "obsidian";
 
 // The CSV Card View community plugin embeds interactive table/cards/kanban
-// views via a ```csv-view``` fenced block (file:/mode:/collapse: directives).
-// Pandoc can't run that plugin, so without this the block prints as literal
-// source. Here we read the referenced CSV and emit a static Markdown table
-// (grouped, for cards/kanban) so the data renders in the PDF.
+// views via a ```csv-view``` or ```csv-inline``` fenced block. Pandoc can't run
+// that plugin, so without this the block prints as literal source. Here we read
+// the referenced CSV and emit a static Markdown table (grouped, for
+// cards/kanban) so the data renders in the PDF.
+//
+// Directives understood:
+//   file:     the CSV to read (see resolveCsvPath for how it's resolved)
+//   columns:  ordered allowlist of columns to show
+//   hide:     columns to drop from whatever columns: left
+//   mode:     cards/card/library/kanban/kanban-genre group into sub-tables
+//   collapse: group values to omit entirely, for the grouped modes
 
 export function resolveCsvPath(input: string, fromDir: string): string {
 	if (!input) return input;
@@ -83,6 +90,39 @@ export function detectGroupCol(headers: string[]): string | null {
 	);
 }
 
+// `columns:` and `hide:` narrow which CSV columns reach the PDF. `columns:` is
+// an ordered allowlist — the output uses the order written in the directive,
+// not the order in the file — and `hide:` is a denylist applied to whatever
+// survives it, so the two compose in that order when both are given. Names are
+// matched case- and whitespace-insensitively, since a header is rarely typed
+// the same way twice; a name that matches no header is ignored rather than
+// failing the render.
+function parseNameList(value: string): string[] {
+	return value
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
+}
+
+export function selectColumns(headers: string[], columnsOpt: string, hideOpt: string): number[] {
+	const norm = (s: string) => s.trim().toLowerCase();
+	const wanted = parseNameList(columnsOpt);
+
+	let kept: number[];
+	if (wanted.length) {
+		kept = [];
+		for (const name of wanted) {
+			const i = headers.findIndex((h) => norm(h) === norm(name));
+			if (i !== -1 && !kept.includes(i)) kept.push(i);
+		}
+	} else {
+		kept = headers.map((_, i) => i);
+	}
+
+	const hidden = new Set(parseNameList(hideOpt).map(norm));
+	return kept.filter((i) => !hidden.has(norm(headers[i])));
+}
+
 export async function renderCsvBlock(app: App, body: string, fromDir: string): Promise<string> {
 	const lines = body
 		.split("\n")
@@ -96,9 +136,16 @@ export async function renderCsvBlock(app: App, body: string, fromDir: string): P
 	if (!tfile) return `*[csv-view: file not found: ${csvPath}]*`;
 	const rows = parseCsvText(await app.vault.read(tfile));
 	if (!rows.length) return "*[csv-view: empty file]*";
-	const headers = rows[0],
-		data = rows.slice(1);
-	if (!data.length) return "*[csv-view: no rows]*";
+	const allHeaders = rows[0],
+		allData = rows.slice(1);
+	if (!allData.length) return "*[csv-view: no rows]*";
+
+	// Narrow to the requested columns before anything else looks at the table,
+	// so grouping, collapsing and rendering all agree on what the columns are.
+	const keep = selectColumns(allHeaders, opt("columns"), opt("hide"));
+	if (!keep.length) return "*[csv-view: no columns left to show]*";
+	const headers = keep.map((i) => allHeaders[i]);
+	const data = allData.map((r) => keep.map((i) => r[i]));
 
 	const rawMode = opt("mode").toLowerCase();
 	const grouped = rawMode === "cards" || rawMode === "card" || rawMode === "library" || rawMode === "kanban" || rawMode === "kanban-genre";
@@ -136,7 +183,10 @@ export async function renderCsvBlock(app: App, body: string, fromDir: string): P
 }
 
 export async function expandCsvViews(app: App, content: string, fromDir: string): Promise<string> {
-	const re = /^[ \t]*`{3,}[ \t]*csv-view[ \t]*\n([\s\S]*?)\n[ \t]*`{3,}[ \t]*$/gim;
+	// Both fence names the plugin publishes are accepted; they differ only in
+	// how the source plugin lays the view out on screen, which has no analogue
+	// in a PDF — either way the rows become one static Markdown table.
+	const re = /^[ \t]*`{3,}[ \t]*csv-(?:view|inline)[ \t]*\n([\s\S]*?)\n[ \t]*`{3,}[ \t]*$/gim;
 	const blocks: { full: string; body: string }[] = [];
 	let m: RegExpExecArray | null;
 	while ((m = re.exec(content)) !== null) blocks.push({ full: m[0], body: m[1] });

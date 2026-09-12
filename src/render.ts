@@ -51,7 +51,21 @@ function numKey(n: string): string {
 		.join(".");
 }
 
-async function runPandoc(settings: RollupSettings, tempMd: string, tempHdr: string, pdfPath: string, docTitle: string, needsToc: boolean): Promise<void> {
+// The LaTeX engine reports a glyph its fonts can't draw as a warning on
+// stderr and then silently drops it from the PDF; Pandoc still exits 0. With
+// the CJK font setting empty (the default), a note of Chinese vocabulary
+// therefore compiles to a "successful" PDF with every hanzi missing. Pulling
+// the distinct characters out of stderr turns that into something the Notice
+// can actually say.
+export function missingGlyphs(stderr: string): string[] {
+	const seen = new Set<string>();
+	const re = /Missing character: There is no (.+?) \(U\+[0-9A-Fa-f]+\)/g;
+	let m: RegExpExecArray | null;
+	while ((m = re.exec(stderr)) !== null) seen.add(m[1]);
+	return [...seen];
+}
+
+async function runPandoc(settings: RollupSettings, tempMd: string, tempHdr: string, pdfPath: string, docTitle: string, needsToc: boolean): Promise<string> {
 	const args = [
 		tempMd,
 		"-o",
@@ -71,12 +85,16 @@ async function runPandoc(settings: RollupSettings, tempMd: string, tempHdr: stri
 	if (settings.cjkFont) args.push("-V", `CJKmainfont=${settings.cjkFont}`);
 	if (needsToc) args.push("--toc", "--toc-depth=5");
 
-	await new Promise<void>((resolve, reject) => {
+	return await new Promise<string>((resolve, reject) => {
 		// execFile (no shell) so note titles/paths containing quotes, `$()`, or
 		// other shell metacharacters can never be interpreted as shell syntax.
-		execFile(settings.pandocPath, args, (err, _stdout, stderr) => {
+		// maxBuffer is raised well above Node's 1 MB default: the engine emits
+		// ~110 bytes of warning per unrenderable glyph, so a long CJK rollup
+		// with no font set overflows the default, gets pandoc killed mid-run,
+		// and reports a build failure for a document that would have compiled.
+		execFile(settings.pandocPath, args, { maxBuffer: 32 * 1024 * 1024 }, (err, _stdout, stderr) => {
 			if (err) reject(new Error(stderr || err.message));
-			else resolve();
+			else resolve(stderr || "");
 		});
 	});
 }
@@ -128,8 +146,20 @@ export async function renderRollup(app: App, activeFile: TFile, settings: Rollup
 	const needsToc = /^##/m.test(compiled) || (isAppendix && /^## Appendix /m.test(compiled));
 
 	try {
-		await runPandoc(settings, tempMd, tempHdr, pdfPath, indexTitle, needsToc);
-		new Notice(`✓ PDF saved: ${safeName}${suffix}.pdf`);
+		const stderr = await runPandoc(settings, tempMd, tempHdr, pdfPath, indexTitle, needsToc);
+		const missing = missingGlyphs(stderr);
+		if (missing.length) {
+			const sample = missing.slice(0, 8).join(" ");
+			const more = missing.length > 8 ? ` +${missing.length - 8} more` : "";
+			new Notice(
+				`✓ PDF saved: ${safeName}${suffix}.pdf — but ${missing.length} character(s) are missing from it (${sample}${more}). ` +
+					`Your LaTeX fonts can't draw them; for Chinese/Japanese/Korean, set a CJK font in the plugin settings.`,
+				15000,
+			);
+			console.warn("Rollup to PDF — characters dropped by the LaTeX engine:", missing.join(" "));
+		} else {
+			new Notice(`✓ PDF saved: ${safeName}${suffix}.pdf`);
+		}
 	} catch (e) {
 		new Notice(`Pandoc error: ${(e as Error).message}`);
 		console.error("Pandoc stderr:", e);
