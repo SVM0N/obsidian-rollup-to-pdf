@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.2.1 — only name a CJK font when the document needs one
+
+### Fixed
+- **A detected CJK font could break Latin-only exports.** 1.2.0 backfills the
+  CJK font setting on load for every install with a CJK font on disk, and the
+  setting was then passed to Pandoc on *every* render. fontspec aborts the
+  whole run if it can't resolve the family — so on a platform where the
+  detector's file-to-family mapping is wrong (the Linux Noto CJK names are the
+  likely case; some distros ship the family without the `SC` suffix), a
+  document with no CJK in it at all would stop producing a PDF, where 1.1.1
+  compiled it fine. `CJKmainfont` is now passed only when the compiled document
+  actually contains CJK text, so a Latin-only export can't be affected by the
+  setting whatever it holds.
+
+### Added
+- `hasCjkText()` in `src/text-utils.ts` — covers ideographs (including
+  extension A, the supplementary-plane extensions and the compatibility
+  block), kana, hangul, CJK punctuation and fullwidth forms, and deliberately
+  does **not** match pinyin diacritics or accented Latin.
+- `test/harness.js` now also bundles `text-utils.ts`, so its helpers are
+  directly unit-testable (88 edge-case tests total).
+
 ## 1.2.0 — tables, image embeds, CJK text, and CSV column control
 
 ### Fixed

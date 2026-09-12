@@ -7,7 +7,7 @@
 // This harness bundles that TypeScript straight from src/ with
 // esbuild, stubs the Obsidian API with a filesystem-backed fake,
 // and returns the live { walkInline, walkAppendix,
-// loadSnippetSpanStyles } so tests exercise the exact code that
+// loadSnippetSpanStyles, hasCjkText, ... } so tests exercise the exact code that
 // ships in main.js — never a duplicate.
 // ============================================================
 
@@ -42,7 +42,7 @@ function bundle(entryRel) {
 
 function loadCore() {
 	if (cachedCore) return cachedCore;
-	cachedCore = { ...bundle("walker.ts"), ...bundle("css-snippets.ts") };
+	cachedCore = { ...bundle("walker.ts"), ...bundle("css-snippets.ts"), ...bundle("text-utils.ts") };
 	return cachedCore;
 }
 

@@ -5,6 +5,7 @@ import { execFile } from "child_process";
 import { RollupSettings } from "./settings";
 import { walkInline, walkAppendix, Appendix, RenderContext } from "./walker";
 import { loadSnippetSpanStyles } from "./css-snippets";
+import { hasCjkText } from "./text-utils";
 
 export type Variant = "full" | "depth1" | "depth2" | "appendix";
 
@@ -65,7 +66,7 @@ export function missingGlyphs(stderr: string): string[] {
 	return [...seen];
 }
 
-async function runPandoc(settings: RollupSettings, tempMd: string, tempHdr: string, pdfPath: string, docTitle: string, needsToc: boolean): Promise<string> {
+async function runPandoc(settings: RollupSettings, tempMd: string, tempHdr: string, pdfPath: string, docTitle: string, needsToc: boolean, hasCjk: boolean): Promise<string> {
 	const args = [
 		tempMd,
 		"-o",
@@ -82,7 +83,8 @@ async function runPandoc(settings: RollupSettings, tempMd: string, tempHdr: stri
 		tempHdr,
 		"--standalone",
 	];
-	if (settings.cjkFont) args.push("-V", `CJKmainfont=${settings.cjkFont}`);
+	// Only when the document needs it — see hasCjkText for why.
+	if (settings.cjkFont && hasCjk) args.push("-V", `CJKmainfont=${settings.cjkFont}`);
 	if (needsToc) args.push("--toc", "--toc-depth=5");
 
 	return await new Promise<string>((resolve, reject) => {
@@ -146,7 +148,7 @@ export async function renderRollup(app: App, activeFile: TFile, settings: Rollup
 	const needsToc = /^##/m.test(compiled) || (isAppendix && /^## Appendix /m.test(compiled));
 
 	try {
-		const stderr = await runPandoc(settings, tempMd, tempHdr, pdfPath, indexTitle, needsToc);
+		const stderr = await runPandoc(settings, tempMd, tempHdr, pdfPath, indexTitle, needsToc, hasCjkText(compiled));
 		const missing = missingGlyphs(stderr);
 		if (missing.length) {
 			const sample = missing.slice(0, 8).join(" ");

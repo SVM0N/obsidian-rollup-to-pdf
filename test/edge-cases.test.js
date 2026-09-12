@@ -6,7 +6,7 @@
 // ============================================================
 
 const path = require("path");
-const { render } = require("./harness.js");
+const { render, loadCore } = require("./harness.js");
 
 const EXAMPLES = path.join(__dirname, "..", "examples");
 const EDGE = path.join(EXAMPLES, "edge-cases");
@@ -212,6 +212,19 @@ const ck = (name, cond) => cond ? pass++ : (fail++, console.log("FAIL: " + name)
         ck("AD hide: keeps the rest in file order", /\| Character \| Pinyin \| Image \|/.test(seg));
         ck("AD CJK rows survive the column filter", /\| 听 \| tīng \|/.test(seg) && /\| 飞机 \| fēijī \|/.test(seg));
         ck("AD no raw ![[ embeds leak through", !/!\[\[/.test(seg));
+    }
+
+    // ---- CJK detection gates the font Pandoc is told about ----
+    // Naming a CJK font aborts the whole run if fontspec can't resolve it, so
+    // it is only passed for documents that actually contain CJK text. A false
+    // positive here would break Latin-only exports that have nothing to do
+    // with the feature.
+    {
+        const { hasCjkText } = loadCore();
+        const yes = ["\u542c t\u012bng", "\u3072\u3089\u304c\u306a", "\u30ab\u30bf\u30ab\u30ca", "\ud55c\uae00", "\u4e2d\u6587\u3001\u6807\u70b9", "\uff46\uff55\uff4c\uff4c", "\u{20000} ext-B"];
+        const no = ["", "Plain English only.", "Caf\u00e9 na\u00efve \u2014 em dash, \u00b0 and \u00bd", "pinyin only: sh\u01d2u j\u012b", "| A | B |\n|---|---|"];
+        ck("CJK detected for hanzi, kana, hangul, fullwidth and ext-B", yes.every(hasCjkText));
+        ck("CJK not claimed for Latin, accents or pinyin diacritics", no.every((s) => !hasCjkText(s)));
     }
 
     // ---- depth-cap behaviour via MAX_DEPTH ----
